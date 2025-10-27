@@ -15,7 +15,7 @@ dependencies = [
     "pydantic<3,>=2",
 ]
 name = "langchain-voyageai"
-version = "0.1.7"
+version = "0.2.0"
 description = "An integration package connecting VoyageAI and LangChain"
 readme = "README.md"
 

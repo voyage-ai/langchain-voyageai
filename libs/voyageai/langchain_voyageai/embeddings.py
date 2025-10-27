@@ -1,5 +1,5 @@
 import logging
-from typing import Any, Iterable, List, Literal, Optional, cast
+from typing import Any, Generator, Iterable, List, Literal, Optional, Tuple, cast
 
 import voyageai  # type: ignore
 from langchain_core.embeddings import Embeddings
@@ -16,10 +16,23 @@ from typing_extensions import Self
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_VOYAGE_2_BATCH_SIZE = 72
-DEFAULT_VOYAGE_3_LITE_BATCH_SIZE = 30
-DEFAULT_VOYAGE_3_BATCH_SIZE = 10
-DEFAULT_BATCH_SIZE = 7
+VOYAGE_TOTAL_TOKEN_LIMITS = {
+    "voyage-context-3": 32_000,
+    "voyage-3.5-lite": 1_000_000,
+    "voyage-3.5": 320_000,
+    "voyage-2": 320_000,
+    "voyage-3-large": 120_000,
+    "voyage-code-3": 120_000,
+    "voyage-large-2-instruct": 120_000,
+    "voyage-finance-2": 120_000,
+    "voyage-multilingual-2": 120_000,
+    "voyage-law-2": 120_000,
+    "voyage-large-2": 120_000,
+    "voyage-3": 120_000,
+    "voyage-3-lite": 120_000,
+    "voyage-code-2": 120_000,
+    "voyage-3-m-exp": 120_000,
+}
 
 
 class VoyageAIEmbeddings(BaseModel, Embeddings):
@@ -36,7 +49,7 @@ class VoyageAIEmbeddings(BaseModel, Embeddings):
     _client: voyageai.Client = PrivateAttr()
     _aclient: voyageai.client_async.AsyncClient = PrivateAttr()
     model: str
-    batch_size: int
+    batch_size: Optional[int] = 1000
 
     output_dimension: Optional[Literal[256, 512, 1024, 2048]] = None
     show_progress_bar: bool = False
@@ -55,28 +68,6 @@ class VoyageAIEmbeddings(BaseModel, Embeddings):
         populate_by_name=True,
     )
 
-    @model_validator(mode="before")
-    @classmethod
-    def default_values(cls, values: dict) -> Any:
-        """Set default batch size based on model"""
-        model = values.get("model")
-        batch_size = values.get("batch_size")
-        if batch_size is None:
-            values["batch_size"] = (
-                DEFAULT_VOYAGE_2_BATCH_SIZE
-                if model in ["voyage-2", "voyage-02"]
-                else (
-                    DEFAULT_VOYAGE_3_LITE_BATCH_SIZE
-                    if model in ["voyage-3-lite", "voyage-3.5-lite"]
-                    else (
-                        DEFAULT_VOYAGE_3_BATCH_SIZE
-                        if model in ["voyage-3", "voyage-3.5"]
-                        else DEFAULT_BATCH_SIZE
-                    )
-                )
-            )
-        return values
-
     @model_validator(mode="after")
     def validate_environment(self) -> Self:
         """Validate that VoyageAI credentials exist in environment."""
@@ -85,106 +76,181 @@ class VoyageAIEmbeddings(BaseModel, Embeddings):
         self._aclient = voyageai.client_async.AsyncClient(api_key=api_key_str)
         return self
 
-    def _get_batch_iterator(self, texts: List[str]) -> Iterable:
-        if self.show_progress_bar:
-            try:
-                from tqdm.auto import tqdm  # type: ignore
-            except ImportError as e:
-                raise ImportError(
-                    "Must have tqdm installed if `show_progress_bar` is set to True. "
-                    "Please install with `pip install tqdm`."
-                ) from e
-
-            _iter = tqdm(range(0, len(texts), self.batch_size))
-        else:
-            _iter = range(0, len(texts), self.batch_size)  # type: ignore
-
-        return _iter
-
-    def _is_context_model(self) -> bool:
-        """Check if the model is a contextualized embedding model."""
-        return "context" in self.model
-
-    def _embed_context(
-        self, inputs: List[List[str]], input_type: str
-    ) -> List[List[float]]:
-        """Embed using contextualized embedding API."""
-        r = self._client.contextualized_embed(
-            inputs=inputs,
-            model=self.model,
-            input_type=input_type,
-            output_dimension=self.output_dimension,
-        ).results
-        return r[0].embeddings  # type: ignore
-
-    def _embed_regular(self, texts: List[str], input_type: str) -> List[List[float]]:
-        """Embed using regular embedding API."""
-        embeddings: List[List[float]] = []
-        _iter = self._get_batch_iterator(texts)
-        for i in _iter:
-            r = self._client.embed(
-                texts[i : i + self.batch_size],
-                model=self.model,
-                input_type=input_type,
-                truncation=self.truncation,
-                output_dimension=self.output_dimension,
-            ).embeddings
-            embeddings.extend(cast(Iterable[List[float]], r))
-        return embeddings
-
+    # Public API - Sync
     def embed_documents(self, texts: List[str]) -> List[List[float]]:
         """Embed search docs."""
         if self._is_context_model():
-            return self._embed_context([texts], "document")
+            return self._embed_context(texts, "document")
         return self._embed_regular(texts, "document")
 
     def embed_query(self, text: str) -> List[float]:
         """Embed query text."""
         if self._is_context_model():
-            result = self._embed_context([[text]], "query")
+            result = self._embed_context([text], "query")
         else:
             result = self._embed_regular([text], "query")
         return result[0]
 
-    async def _aembed_context(
-        self, inputs: List[List[str]], input_type: str
-    ) -> List[List[float]]:
-        """Async embed using contextualized embedding API."""
-        r = await self._aclient.contextualized_embed(
-            inputs=inputs,
-            model=self.model,
-            input_type=input_type,
-            output_dimension=self.output_dimension,
-        )
-        return r.results[0].embeddings  # type: ignore
-
-    async def _aembed_regular(
-        self, texts: List[str], input_type: str
-    ) -> List[List[float]]:
-        """Async embed using regular embedding API."""
-        embeddings: List[List[float]] = []
-        _iter = self._get_batch_iterator(texts)
-        for i in _iter:
-            r = await self._aclient.embed(
-                texts[i : i + self.batch_size],
-                model=self.model,
-                input_type=input_type,
-                truncation=self.truncation,
-                output_dimension=self.output_dimension,
-            )
-            embeddings.extend(cast(Iterable[List[float]], r.embeddings))
-        return embeddings
-
+    # Public API - Async
     async def aembed_documents(self, texts: List[str]) -> List[List[float]]:
         """Async embed search docs."""
         if self._is_context_model():
-            return await self._aembed_context([texts], "document")
+            return await self._aembed_context(texts, "document")
         return await self._aembed_regular(texts, "document")
 
     async def aembed_query(self, text: str) -> List[float]:
         """Async embed query text."""
         if self._is_context_model():
-            result = await self._aembed_context([[text]], "query")
+            result = await self._aembed_context([text], "query")
         else:
             result = await self._aembed_regular([text], "query")
         return result[0]
+
+    # Helpers
+    def _is_context_model(self) -> bool:
+        """Check if the model is a contextualized embedding model."""
+        return "context" in self.model
+
+    def init_progress_bar(self, texts_len: int) -> Any:
+        if self.show_progress_bar:
+            try:
+                from tqdm.auto import tqdm  # type: ignore
+
+                return tqdm(total=texts_len, desc="Encoding sentences")
+            except ImportError as e:
+                raise ImportError(
+                    "Must have tqdm installed if `show_progress_bar` is set to True. "
+                    "Please install with `pip install tqdm`."
+                ) from e
+        else:
+            return None
+
+    def _build_batches(
+        self, texts: List[str]
+    ) -> Generator[Tuple[List[str], int], None, None]:
+        """Generate batches of texts based on token limits."""
+        max_tokens_per_batch = VOYAGE_TOTAL_TOKEN_LIMITS.get(self.model, 120_000)
+        index = 0
+
+        while index < len(texts):
+            batch: List[str] = []
+            batch_tokens = 0
+            while (
+                index < len(texts)
+                and len(batch) < (self.batch_size or 1000)
+                and batch_tokens < max_tokens_per_batch
+            ):
+                n_tokens = len(
+                    self._client.tokenize([texts[index]], model=self.model)[0]
+                )
+                if batch_tokens + n_tokens > max_tokens_per_batch and len(batch) > 0:
+                    break
+                batch_tokens += n_tokens
+                batch.append(texts[index])
+                index += 1
+
+            yield batch, len(batch)
+
+    # Sync embedding implementation
+    def _batch_embed(
+        self, texts: List[str], input_type: str, embed_fn: Any
+    ) -> List[List[float]]:
+        """Common batching logic for embedding."""
+        embeddings: List[List[float]] = []
+        pbar = self.init_progress_bar(len(texts))
+
+        for batch, batch_size in self._build_batches(texts):
+            batch_embeddings = embed_fn(batch, input_type)
+            embeddings.extend(cast(Iterable[List[float]], batch_embeddings))
+
+            if pbar:
+                pbar.update(batch_size)
+
+        if pbar:
+            pbar.close()
+
+        return embeddings
+
+    def _embed_context(self, texts: List[str], input_type: str) -> List[List[float]]:
+        """Embed using contextualized embedding API."""
+
+        def embed_fn(batch: List[str], inp_type: str) -> List[List[float]]:
+            r = self._client.contextualized_embed(
+                inputs=[batch],
+                model=self.model,
+                input_type=inp_type,
+                output_dimension=self.output_dimension,
+            ).results
+            return cast(List[List[float]], r[0].embeddings)
+
+        return self._batch_embed(texts, input_type, embed_fn)
+
+    def _embed_regular(self, texts: List[str], input_type: str) -> List[List[float]]:
+        """Embed using regular embedding API."""
+
+        def embed_fn(batch: List[str], inp_type: str) -> List[List[float]]:
+            return cast(
+                List[List[float]],
+                self._client.embed(
+                    batch,
+                    model=self.model,
+                    input_type=inp_type,
+                    truncation=self.truncation,
+                    output_dimension=self.output_dimension,
+                ).embeddings,
+            )
+
+        return self._batch_embed(texts, input_type, embed_fn)
+
+    # Async embedding implementation
+    async def _abatch_embed(
+        self, texts: List[str], input_type: str, embed_fn: Any
+    ) -> List[List[float]]:
+        """Common async batching logic for embedding."""
+        embeddings: List[List[float]] = []
+        pbar = self.init_progress_bar(len(texts))
+
+        for batch, batch_size in self._build_batches(texts):
+            batch_embeddings = await embed_fn(batch, input_type)
+            embeddings.extend(cast(Iterable[List[float]], batch_embeddings))
+
+            if pbar:
+                pbar.update(batch_size)
+
+        if pbar:
+            pbar.close()
+
+        return embeddings
+
+    async def _aembed_context(
+        self, texts: List[str], input_type: str
+    ) -> List[List[float]]:
+        """Async embed using contextualized embedding API."""
+
+        async def embed_fn(batch: List[str], inp_type: str) -> List[List[float]]:
+            r = await self._aclient.contextualized_embed(
+                inputs=[batch],
+                model=self.model,
+                input_type=inp_type,
+                output_dimension=self.output_dimension,
+            )
+            return cast(List[List[float]], r.results[0].embeddings)
+
+        return await self._abatch_embed(texts, input_type, embed_fn)
+
+    async def _aembed_regular(
+        self, texts: List[str], input_type: str
+    ) -> List[List[float]]:
+        """Async embed using regular embedding API."""
+
+        async def embed_fn(batch: List[str], inp_type: str) -> List[List[float]]:
+            r = await self._aclient.embed(
+                batch,
+                model=self.model,
+                input_type=inp_type,
+                truncation=self.truncation,
+                output_dimension=self.output_dimension,
+            )
+            return cast(List[List[float]], r.embeddings)
+
+        return await self._abatch_embed(texts, input_type, embed_fn)
