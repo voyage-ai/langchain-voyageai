@@ -318,9 +318,9 @@ def test_langchain_voyageai_batching_multiple_batches_created(model: str) -> Non
 
     # Verify total texts across all batches equals input
     total_texts = sum(batch_size for _, batch_size in batches)
-    assert (
-        total_texts == nr_of_texts
-    ), f"Expected {nr_of_texts} total texts, got {total_texts}"
+    assert total_texts == nr_of_texts, (
+        f"Expected {nr_of_texts} total texts, got {total_texts}"
+    )
 
     # Verify each batch has texts
     for i, (batch_texts, batch_size) in enumerate(batches):

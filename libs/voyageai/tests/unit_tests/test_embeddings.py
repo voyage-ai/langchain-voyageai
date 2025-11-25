@@ -134,9 +134,9 @@ def test_contextual_model_variants() -> None:
         emb = VoyageAIEmbeddings(
             voyage_api_key=SecretStr("NOT_A_VALID_KEY"), model=model
         )  # type: ignore
-        assert (
-            emb._is_context_model() is True
-        ), f"Model {model} should be detected as contextual"
+        assert emb._is_context_model() is True, (
+            f"Model {model} should be detected as contextual"
+        )
 
 
 def test_build_batches_basic() -> None:
