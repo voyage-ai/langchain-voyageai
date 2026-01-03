@@ -26,8 +26,8 @@ You can specify a custom API endpoint using the `base_url` parameter:
 
 ```python
 embeddings = VoyageAIEmbeddings(
-    model="voyage-2",
-    base_url="https://your-custom-endpoint.com/v1"
+    model="voyage-3.5",
+    base_url="https://ai.mongodb.com/v1"
 )
 ```
 
