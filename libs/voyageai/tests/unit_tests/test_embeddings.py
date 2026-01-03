@@ -139,6 +139,42 @@ def test_contextual_model_variants() -> None:
         )
 
 
+def test_initialization_with_base_url() -> None:
+    """Test embedding model initialization with custom base_url."""
+    custom_url = "https://custom.example.com/v1"
+    emb = VoyageAIEmbeddings(
+        voyage_api_key=SecretStr("NOT_A_VALID_KEY"),
+        model="voyage-2",
+        base_url=custom_url,
+    )  # type: ignore
+    assert isinstance(emb, Embeddings)
+    assert emb.base_url == custom_url
+    assert emb._client is not None
+
+
+def test_initialization_without_base_url() -> None:
+    """Test embedding model initialization without base_url (default behavior)."""
+    emb = VoyageAIEmbeddings(
+        voyage_api_key=SecretStr("NOT_A_VALID_KEY"),
+        model="voyage-2",
+    )  # type: ignore
+    assert isinstance(emb, Embeddings)
+    assert emb.base_url is None
+    assert emb._client is not None
+
+
+def test_initialization_with_none_base_url() -> None:
+    """Test embedding model initialization with explicit None base_url."""
+    emb = VoyageAIEmbeddings(
+        voyage_api_key=SecretStr("NOT_A_VALID_KEY"),
+        model="voyage-2",
+        base_url=None,
+    )  # type: ignore
+    assert isinstance(emb, Embeddings)
+    assert emb.base_url is None
+    assert emb._client is not None
+
+
 def test_build_batches_basic() -> None:
     """Test basic batch building."""
     from unittest.mock import Mock
