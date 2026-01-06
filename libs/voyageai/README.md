@@ -19,3 +19,16 @@ See a [usage example](https://python.langchain.com/docs/integrations/text_embedd
 ```python
 from langchain_voyageai import VoyageAIEmbeddings
 ```
+
+### Custom API Endpoint
+
+You can specify a custom API endpoint using the `base_url` parameter:
+
+```python
+embeddings = VoyageAIEmbeddings(
+    model="voyage-3.5",
+    base_url="https://ai.mongodb.com/v1"
+)
+```
+
+This is useful for MongoDB Atlas users or custom deployments.

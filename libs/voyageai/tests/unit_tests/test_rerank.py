@@ -34,6 +34,39 @@ def test_init() -> None:
     )
 
 
+@pytest.mark.requires("voyageai")
+def test_init_with_base_url() -> None:
+    """Test reranker initialization with custom base_url."""
+    custom_url = "https://custom.example.com/v1"
+    rerank = VoyageAIRerank(
+        voyage_api_key="foo",  # type: ignore[arg-type]
+        model="rerank-lite-1",
+        base_url=custom_url,
+    )
+    assert rerank.base_url == custom_url
+
+
+@pytest.mark.requires("voyageai")
+def test_init_without_base_url() -> None:
+    """Test reranker initialization without base_url (default behavior)."""
+    rerank = VoyageAIRerank(
+        voyage_api_key="foo",  # type: ignore[arg-type]
+        model="rerank-lite-1",
+    )
+    assert rerank.base_url is None
+
+
+@pytest.mark.requires("voyageai")
+def test_init_with_none_base_url() -> None:
+    """Test reranker initialization with explicit None base_url."""
+    rerank = VoyageAIRerank(
+        voyage_api_key="foo",  # type: ignore[arg-type]
+        model="rerank-lite-1",
+        base_url=None,
+    )
+    assert rerank.base_url is None
+
+
 def get_mock_rerank_result() -> RerankingObject:
     VoyageResultItem = namedtuple("VoyageResultItem", ["index", "relevance_score"])
     Usage = namedtuple("Usage", ["total_tokens"])
