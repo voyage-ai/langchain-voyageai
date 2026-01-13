@@ -1,4 +1,5 @@
 from langchain_voyageai.embeddings import VoyageAIEmbeddings
+from langchain_voyageai.multimodal_embeddings import VoyageAIMultimodalEmbeddings
 from langchain_voyageai.rerank import VoyageAIRerank
 
-__all__ = ["VoyageAIEmbeddings", "VoyageAIRerank"]
+__all__ = ["VoyageAIEmbeddings", "VoyageAIMultimodalEmbeddings", "VoyageAIRerank"]
