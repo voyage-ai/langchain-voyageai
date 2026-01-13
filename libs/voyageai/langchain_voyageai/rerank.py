@@ -20,8 +20,11 @@ class VoyageAIRerank(BaseDocumentCompressor):
     aclient: voyageai.AsyncClient = None  # type: ignore
     """VoyageAI clients to use for compressing documents."""
     voyage_api_key: Optional[SecretStr] = None
-    """VoyageAI API key. Must be specified directly or via environment variable 
+    """VoyageAI API key. Must be specified directly or via environment variable
         VOYAGE_API_KEY."""
+    base_url: Optional[str] = None
+    """Custom API endpoint URL. If not provided, the VoyageAI SDK determines
+    the default based on the API key."""
     model: str
     """Model to use for reranking."""
     top_k: Optional[int] = None
@@ -47,8 +50,9 @@ class VoyageAIRerank(BaseDocumentCompressor):
         else:
             api_key_str = None
 
-        values["client"] = voyageai.Client(api_key=api_key_str)
-        values["aclient"] = voyageai.AsyncClient(api_key=api_key_str)
+        base_url = values.get("base_url")
+        values["client"] = voyageai.Client(api_key=api_key_str, base_url=base_url)
+        values["aclient"] = voyageai.AsyncClient(api_key=api_key_str, base_url=base_url)
 
         return values
 

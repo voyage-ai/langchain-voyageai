@@ -62,6 +62,9 @@ class VoyageAIEmbeddings(BaseModel, Embeddings):
             "pass `api_key` to VoyageAIEmbeddings constructor.",
         ),
     )
+    base_url: Optional[str] = None
+    """Custom API endpoint URL. If not provided, the VoyageAI SDK determines
+    the default based on the API key."""
 
     model_config = ConfigDict(
         extra="forbid",
@@ -72,8 +75,10 @@ class VoyageAIEmbeddings(BaseModel, Embeddings):
     def validate_environment(self) -> Self:
         """Validate that VoyageAI credentials exist in environment."""
         api_key_str = self.voyage_api_key.get_secret_value()
-        self._client = voyageai.Client(api_key=api_key_str)
-        self._aclient = voyageai.client_async.AsyncClient(api_key=api_key_str)
+        self._client = voyageai.Client(api_key=api_key_str, base_url=self.base_url)
+        self._aclient = voyageai.client_async.AsyncClient(
+            api_key=api_key_str, base_url=self.base_url
+        )
         return self
 
     # Public API - Sync

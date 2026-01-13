@@ -20,6 +20,25 @@ def test_langchain_voyageai_embedding_documents(model: str) -> None:
 
 
 @pytest.mark.parametrize("model", [MODEL, CONTEXT_MODEL])
+def test_langchain_voyageai_embedding_with_base_url(model: str) -> None:
+    """Test voyage embeddings with custom base_url.
+
+    This test verifies that the base_url parameter is correctly passed through
+    to the VoyageAI client. Since we're using the default VoyageAI API endpoint,
+    the embeddings should work normally.
+    """
+    documents = ["foo bar"]
+    # Use the standard VoyageAI API endpoint
+    embedding = VoyageAIEmbeddings(
+        model=model,
+        base_url="https://api.voyageai.com/v1",
+    )  # type: ignore[call-arg]
+    output = embedding.embed_documents(documents)
+    assert len(output) == 1
+    assert len(output[0]) == 1024
+
+
+@pytest.mark.parametrize("model", [MODEL, CONTEXT_MODEL])
 def test_langchain_voyageai_embedding_documents_multiple(model: str) -> None:
     """Test voyage embeddings."""
     documents = ["foo bar", "bar foo", "foo"]

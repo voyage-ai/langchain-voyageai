@@ -12,6 +12,15 @@ def test_voyageai_reranker_init() -> None:
     VoyageAIRerank(voyage_api_key="foo", model="foo")  # type: ignore[arg-type]
 
 
+def test_voyageai_reranker_init_with_base_url() -> None:
+    """Test the voyageai reranker initializes correctly with base_url."""
+    VoyageAIRerank(
+        voyage_api_key="foo",  # type: ignore[arg-type]
+        model="foo",
+        base_url="https://api.voyageai.com/v1",
+    )
+
+
 def test_sync() -> None:
     rerank = VoyageAIRerank(
         voyage_api_key=os.environ["VOYAGE_API_KEY"],  # type: ignore[arg-type]
