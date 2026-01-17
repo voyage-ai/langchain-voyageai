@@ -18,9 +18,12 @@ logger = logging.getLogger(__name__)
 
 VOYAGE_TOTAL_TOKEN_LIMITS = {
     "voyage-context-3": 32_000,
+    "voyage-4-lite": 1_000_000,
     "voyage-3.5-lite": 1_000_000,
+    "voyage-4": 320_000,
     "voyage-3.5": 320_000,
     "voyage-2": 320_000,
+    "voyage-4-large": 120_000,
     "voyage-3-large": 120_000,
     "voyage-code-3": 120_000,
     "voyage-large-2-instruct": 120_000,

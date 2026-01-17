@@ -7,9 +7,21 @@ from langchain_voyageai import VoyageAIEmbeddings
 # Please set VOYAGE_API_KEY in the environment variables
 MODEL = "voyage-2"
 CONTEXT_MODEL = "voyage-context-3"
+VOYAGE_4_MODEL = "voyage-4"
+VOYAGE_4_LITE_MODEL = "voyage-4-lite"
+VOYAGE_4_LARGE_MODEL = "voyage-4-large"
+
+# All models for generic tests
+ALL_MODELS = [
+    MODEL,
+    CONTEXT_MODEL,
+    VOYAGE_4_MODEL,
+    VOYAGE_4_LITE_MODEL,
+    VOYAGE_4_LARGE_MODEL,
+]
 
 
-@pytest.mark.parametrize("model", [MODEL, CONTEXT_MODEL])
+@pytest.mark.parametrize("model", ALL_MODELS)
 def test_langchain_voyageai_embedding_documents(model: str) -> None:
     """Test voyage embeddings."""
     documents = ["foo bar"]
@@ -19,7 +31,7 @@ def test_langchain_voyageai_embedding_documents(model: str) -> None:
     assert len(output[0]) == 1024
 
 
-@pytest.mark.parametrize("model", [MODEL, CONTEXT_MODEL])
+@pytest.mark.parametrize("model", ALL_MODELS)
 def test_langchain_voyageai_embedding_with_base_url(model: str) -> None:
     """Test voyage embeddings with custom base_url.
 
@@ -38,7 +50,7 @@ def test_langchain_voyageai_embedding_with_base_url(model: str) -> None:
     assert len(output[0]) == 1024
 
 
-@pytest.mark.parametrize("model", [MODEL, CONTEXT_MODEL])
+@pytest.mark.parametrize("model", ALL_MODELS)
 def test_langchain_voyageai_embedding_documents_multiple(model: str) -> None:
     """Test voyage embeddings."""
     documents = ["foo bar", "bar foo", "foo"]
@@ -50,7 +62,7 @@ def test_langchain_voyageai_embedding_documents_multiple(model: str) -> None:
     assert len(output[2]) == 1024
 
 
-@pytest.mark.parametrize("model", [MODEL, CONTEXT_MODEL])
+@pytest.mark.parametrize("model", ALL_MODELS)
 def test_langchain_voyageai_embedding_query(model: str) -> None:
     """Test voyage embeddings."""
     document = "foo bar"
@@ -59,7 +71,7 @@ def test_langchain_voyageai_embedding_query(model: str) -> None:
     assert len(output) == 1024
 
 
-@pytest.mark.parametrize("model", [MODEL, CONTEXT_MODEL])
+@pytest.mark.parametrize("model", ALL_MODELS)
 async def test_langchain_voyageai_async_embedding_documents_multiple(
     model: str,
 ) -> None:
@@ -73,7 +85,7 @@ async def test_langchain_voyageai_async_embedding_documents_multiple(
     assert len(output[2]) == 1024
 
 
-@pytest.mark.parametrize("model", [MODEL, CONTEXT_MODEL])
+@pytest.mark.parametrize("model", ALL_MODELS)
 async def test_langchain_voyageai_async_embedding_query(model: str) -> None:
     """Test voyage embeddings."""
     document = "foo bar"
@@ -166,7 +178,7 @@ def test_langchain_voyageai_contextual_embedding_query_with_context() -> None:
     assert any(val != 0.0 for val in output)
 
 
-@pytest.mark.parametrize("model", [MODEL, CONTEXT_MODEL])
+@pytest.mark.parametrize("model", ALL_MODELS)
 def test_langchain_voyageai_embedding_with_small_batch_size(model: str) -> None:
     """Test embedding with small batch size to verify batching works."""
     documents = ["text1", "text2", "text3", "text4", "text5"]
@@ -180,7 +192,7 @@ def test_langchain_voyageai_embedding_with_small_batch_size(model: str) -> None:
     assert output[0] != output[1]
 
 
-@pytest.mark.parametrize("model", [MODEL, CONTEXT_MODEL])
+@pytest.mark.parametrize("model", ALL_MODELS)
 async def test_langchain_voyageai_async_embedding_with_small_batch_size(
     model: str,
 ) -> None:
@@ -193,7 +205,7 @@ async def test_langchain_voyageai_async_embedding_with_small_batch_size(
     assert all(len(emb) == 1024 for emb in output)
 
 
-@pytest.mark.parametrize("model", [MODEL, CONTEXT_MODEL])
+@pytest.mark.parametrize("model", ALL_MODELS)
 def test_langchain_voyageai_embedding_large_texts(model: str) -> None:
     """Test embedding with large texts that might hit token limits."""
     # Create texts with varying sizes
@@ -235,7 +247,7 @@ async def test_langchain_voyageai_async_contextual_embedding_with_batching() -> 
     assert all(len(emb) == 1024 for emb in output)
 
 
-@pytest.mark.parametrize("model", [MODEL, CONTEXT_MODEL])
+@pytest.mark.parametrize("model", ALL_MODELS)
 def test_langchain_voyageai_embedding_empty_list(model: str) -> None:
     """Test embedding with empty list."""
     documents: list[str] = []
@@ -246,7 +258,7 @@ def test_langchain_voyageai_embedding_empty_list(model: str) -> None:
     assert isinstance(output, list)
 
 
-@pytest.mark.parametrize("model", [MODEL, CONTEXT_MODEL])
+@pytest.mark.parametrize("model", ALL_MODELS)
 def test_langchain_voyageai_embedding_single_document(model: str) -> None:
     """Test embedding single document."""
     documents = ["single document"]
@@ -257,7 +269,7 @@ def test_langchain_voyageai_embedding_single_document(model: str) -> None:
     assert len(output[0]) == 1024
 
 
-@pytest.mark.parametrize("model", [MODEL, CONTEXT_MODEL])
+@pytest.mark.parametrize("model", ALL_MODELS)
 def test_langchain_voyageai_embedding_consistency(model: str) -> None:
     """Test that same text produces same embedding."""
     text = "consistency test text"
@@ -270,7 +282,7 @@ def test_langchain_voyageai_embedding_consistency(model: str) -> None:
     assert output1 == output2
 
 
-@pytest.mark.parametrize("model", [MODEL, CONTEXT_MODEL])
+@pytest.mark.parametrize("model", ALL_MODELS)
 def test_langchain_voyageai_automatic_batching_with_long_texts(model: str) -> None:
     """Test automatic batching with long texts exceeding token limits."""
     # Context models have smaller context window (32k tokens)
@@ -312,7 +324,7 @@ def test_langchain_voyageai_automatic_batching_with_long_texts(model: str) -> No
     assert output[1] != output[2]
 
 
-@pytest.mark.parametrize("model", [MODEL, CONTEXT_MODEL])
+@pytest.mark.parametrize("model", ALL_MODELS)
 def test_langchain_voyageai_batching_multiple_batches_created(model: str) -> None:
     """Test that multiple batches are created when token limits are exceeded."""
     if "context" in model:
@@ -347,7 +359,7 @@ def test_langchain_voyageai_batching_multiple_batches_created(model: str) -> Non
         assert batch_size > 0, f"Batch {i} is empty"
 
 
-@pytest.mark.parametrize("model", [MODEL, CONTEXT_MODEL])
+@pytest.mark.parametrize("model", ALL_MODELS)
 async def test_langchain_voyageai_async_automatic_batching_with_long_texts(
     model: str,
 ) -> None:
@@ -379,3 +391,34 @@ async def test_langchain_voyageai_async_automatic_batching_with_long_texts(
     # Verify embeddings are unique
     unique_embeddings = {tuple(emb) for emb in output}
     assert len(unique_embeddings) == 5
+
+
+# ============================================================================
+# Voyage-4 Family Specific Tests (unique features)
+# ============================================================================
+
+
+@pytest.mark.parametrize(
+    "model,dimension",
+    [
+        (VOYAGE_4_MODEL, 256),
+        (VOYAGE_4_MODEL, 512),
+        (VOYAGE_4_MODEL, 1024),
+        (VOYAGE_4_MODEL, 2048),
+        (VOYAGE_4_LITE_MODEL, 256),
+        (VOYAGE_4_LITE_MODEL, 512),
+        (VOYAGE_4_LITE_MODEL, 1024),
+        (VOYAGE_4_LITE_MODEL, 2048),
+        (VOYAGE_4_LARGE_MODEL, 256),
+        (VOYAGE_4_LARGE_MODEL, 512),
+        (VOYAGE_4_LARGE_MODEL, 1024),
+        (VOYAGE_4_LARGE_MODEL, 2048),
+    ],
+)
+def test_voyage_4_family_flexible_output_dimensions(model: str, dimension: int) -> None:
+    """Test voyage-4 family embeddings with flexible output dimensions."""
+    documents = ["foo bar"]
+    embedding = VoyageAIEmbeddings(model=model, output_dimension=dimension)  # type: ignore[call-arg, arg-type]
+    output = embedding.embed_documents(documents)
+    assert len(output) == 1
+    assert len(output[0]) == dimension
