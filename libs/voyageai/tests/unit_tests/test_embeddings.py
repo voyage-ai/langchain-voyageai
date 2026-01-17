@@ -288,6 +288,39 @@ def test_init_progress_bar_enabled() -> None:
         pass
 
 
+def test_voyage_4_family_initialization() -> None:
+    """Test voyage-4 family model initialization."""
+    voyage_4_models = ["voyage-4", "voyage-4-lite", "voyage-4-large"]
+
+    for model in voyage_4_models:
+        emb = VoyageAIEmbeddings(
+            voyage_api_key=SecretStr("NOT_A_VALID_KEY"), model=model
+        )  # type: ignore
+        assert isinstance(emb, Embeddings)
+        assert emb.model == model
+        assert emb.batch_size == 1000
+        assert emb._client is not None
+        # Verify voyage-4 models are NOT detected as contextual
+        assert emb._is_context_model() is False, (
+            f"Model {model} should NOT be detected as contextual"
+        )
+
+
+def test_voyage_4_token_limits_in_registry() -> None:
+    """Test voyage-4 family models have correct token limits in registry."""
+    from langchain_voyageai.embeddings import VOYAGE_TOTAL_TOKEN_LIMITS
+
+    # Verify all voyage-4 models are in the registry with correct limits
+    assert "voyage-4" in VOYAGE_TOTAL_TOKEN_LIMITS
+    assert VOYAGE_TOTAL_TOKEN_LIMITS["voyage-4"] == 320_000
+
+    assert "voyage-4-lite" in VOYAGE_TOTAL_TOKEN_LIMITS
+    assert VOYAGE_TOTAL_TOKEN_LIMITS["voyage-4-lite"] == 1_000_000
+
+    assert "voyage-4-large" in VOYAGE_TOTAL_TOKEN_LIMITS
+    assert VOYAGE_TOTAL_TOKEN_LIMITS["voyage-4-large"] == 120_000
+
+
 def test_init_progress_bar_missing_tqdm() -> None:
     """Test progress bar raises error when tqdm missing."""
     import sys
