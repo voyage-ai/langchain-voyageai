@@ -9,13 +9,13 @@ from langchain_voyageai.rerank import VoyageAIRerank
 
 def test_voyageai_reranker_init() -> None:
     """Test the voyageai reranker initializes correctly."""
-    VoyageAIRerank(voyage_api_key="foo", model="foo")  # type: ignore[arg-type]
+    VoyageAIRerank(voyage_api_key="foo", model="foo")  # type: ignore[call-arg, arg-type]
 
 
 def test_voyageai_reranker_init_with_base_url() -> None:
     """Test the voyageai reranker initializes correctly with base_url."""
     VoyageAIRerank(
-        voyage_api_key="foo",  # type: ignore[arg-type]
+        voyage_api_key="foo",  # type: ignore[call-arg, arg-type]
         model="foo",
         base_url="https://api.voyageai.com/v1",
     )
@@ -23,13 +23,13 @@ def test_voyageai_reranker_init_with_base_url() -> None:
 
 def test_voyageai_reranker_init_with_api_key_alias() -> None:
     """Test the voyageai reranker initializes correctly with api_key alias."""
-    rerank = VoyageAIRerank(api_key=os.environ["VOYAGE_API_KEY"], model="rerank-lite-1")
+    rerank = VoyageAIRerank(api_key=os.environ["VOYAGE_API_KEY"], model="rerank-lite-1")  # type: ignore[arg-type]
     assert rerank.voyage_api_key is not None
 
 
 def test_sync() -> None:
     rerank = VoyageAIRerank(
-        voyage_api_key=os.environ["VOYAGE_API_KEY"],  # type: ignore[arg-type]
+        voyage_api_key=os.environ["VOYAGE_API_KEY"],  # type: ignore[call-arg, arg-type]
         model="rerank-lite-1",
     )
     doc_list = [
@@ -44,13 +44,13 @@ def test_sync() -> None:
         "Apple’s conference call to discuss fourth fiscal quarter results and "
         "business updates is scheduled for Thursday, November 2, 2023 at 2:00 "
         "p.m. PT / 5:00 p.m. ET.",
-        "Shakespeare's works, like 'Hamlet' and 'A Midsummer Night's Dream,' "
+        "Shakespeare’s works, like ‘Hamlet’ and ‘A Midsummer Night’s Dream,’ "
         "endure in literature.",
     ]
     documents = [Document(page_content=x) for x in doc_list]
 
     result = rerank.compress_documents(
-        query="When is the Apple's conference call scheduled?", documents=documents
+        query="When is the Apple’s conference call scheduled?", documents=documents
     )
     assert len(doc_list) == len(result)
     for doc in result:
@@ -62,7 +62,7 @@ def test_sync() -> None:
 def test_sync_with_api_key_alias() -> None:
     """Test sync reranking works when initialized with api_key alias."""
     rerank = VoyageAIRerank(
-        api_key=os.environ["VOYAGE_API_KEY"],
+        api_key=os.environ["VOYAGE_API_KEY"],  # type: ignore[arg-type]
         model="rerank-lite-1",
     )
     doc_list = [
@@ -89,7 +89,7 @@ def test_sync_with_api_key_alias() -> None:
 async def test_async_with_api_key_alias() -> None:
     """Test async reranking works when initialized with api_key alias."""
     rerank = VoyageAIRerank(
-        api_key=os.environ["VOYAGE_API_KEY"],
+        api_key=os.environ["VOYAGE_API_KEY"],  # type: ignore[arg-type]
         model="rerank-lite-1",
     )
     doc_list = [
@@ -115,7 +115,7 @@ async def test_async_with_api_key_alias() -> None:
 
 async def test_async() -> None:
     rerank = VoyageAIRerank(
-        voyage_api_key=os.environ["VOYAGE_API_KEY"],  # type: ignore[arg-type]
+        voyage_api_key=os.environ["VOYAGE_API_KEY"],  # type: ignore[call-arg, arg-type]
         model="rerank-lite-1",
     )
     doc_list = [
@@ -130,13 +130,13 @@ async def test_async() -> None:
         "Apple’s conference call to discuss fourth fiscal quarter results and "
         "business updates is scheduled for Thursday, November 2, 2023 at 2:00 "
         "p.m. PT / 5:00 p.m. ET.",
-        "Shakespeare's works, like 'Hamlet' and 'A Midsummer Night's Dream,' "
+        "Shakespeare’s works, like ‘Hamlet’ and ‘A Midsummer Night’s Dream,’ "
         "endure in literature.",
     ]
     documents = [Document(page_content=x) for x in doc_list]
 
     result = await rerank.acompress_documents(
-        query="When is the Apple's conference call scheduled?", documents=documents
+        query="When is the Apple’s conference call scheduled?", documents=documents
     )
     assert len(doc_list) == len(result)
     for doc in result:
