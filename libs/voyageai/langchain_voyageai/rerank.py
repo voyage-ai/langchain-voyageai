@@ -9,7 +9,7 @@ from langchain_core.callbacks.manager import Callbacks
 from langchain_core.documents import Document
 from langchain_core.documents.compressor import BaseDocumentCompressor
 from langchain_core.utils import convert_to_secret_str
-from pydantic import ConfigDict, SecretStr, model_validator
+from pydantic import ConfigDict, Field, SecretStr, model_validator
 from voyageai.object import RerankingObject  # type: ignore
 
 
@@ -19,7 +19,10 @@ class VoyageAIRerank(BaseDocumentCompressor):
     client: voyageai.Client = None  # type: ignore
     aclient: voyageai.AsyncClient = None  # type: ignore
     """VoyageAI clients to use for compressing documents."""
-    voyage_api_key: Optional[SecretStr] = None
+    voyage_api_key: Optional[SecretStr] = Field(
+        alias="api_key",
+        default=None,
+    )
     """VoyageAI API key. Must be specified directly or via environment variable
         VOYAGE_API_KEY."""
     base_url: Optional[str] = None
@@ -33,14 +36,17 @@ class VoyageAIRerank(BaseDocumentCompressor):
 
     model_config = ConfigDict(
         arbitrary_types_allowed=True,
+        populate_by_name=True,
     )
 
     @model_validator(mode="before")
     @classmethod
     def validate_environment(cls, values: Dict) -> Any:
         """Validate that api key exists in environment."""
-        voyage_api_key = values.get("voyage_api_key") or os.getenv(
-            "VOYAGE_API_KEY", None
+        voyage_api_key = (
+            values.get("voyage_api_key")
+            or values.get("api_key")
+            or os.getenv("VOYAGE_API_KEY", None)
         )
         if voyage_api_key:
             api_key_secretstr = convert_to_secret_str(voyage_api_key)
