@@ -1,15 +1,15 @@
 from __future__ import annotations
 
-import os
 from copy import deepcopy
-from typing import Any, Dict, Optional, Sequence, Union
+from typing import Optional, Sequence, Union
 
 import voyageai  # type: ignore
 from langchain_core.callbacks.manager import Callbacks
 from langchain_core.documents import Document
 from langchain_core.documents.compressor import BaseDocumentCompressor
-from langchain_core.utils import convert_to_secret_str
-from pydantic import ConfigDict, SecretStr, model_validator
+from langchain_core.utils import secret_from_env
+from pydantic import ConfigDict, Field, SecretStr, model_validator
+from typing_extensions import Self
 from voyageai.object import RerankingObject  # type: ignore
 
 
@@ -19,7 +19,14 @@ class VoyageAIRerank(BaseDocumentCompressor):
     client: voyageai.Client = None  # type: ignore
     aclient: voyageai.AsyncClient = None  # type: ignore
     """VoyageAI clients to use for compressing documents."""
-    voyage_api_key: Optional[SecretStr] = None
+    voyage_api_key: SecretStr = Field(
+        alias="api_key",
+        default_factory=secret_from_env(
+            "VOYAGE_API_KEY",
+            error_message="Must set `VOYAGE_API_KEY` environment variable or "
+            "pass `api_key` to VoyageAIRerank constructor.",
+        ),
+    )
     """VoyageAI API key. Must be specified directly or via environment variable
         VOYAGE_API_KEY."""
     base_url: Optional[str] = None
@@ -33,28 +40,16 @@ class VoyageAIRerank(BaseDocumentCompressor):
 
     model_config = ConfigDict(
         arbitrary_types_allowed=True,
+        populate_by_name=True,
     )
 
-    @model_validator(mode="before")
-    @classmethod
-    def validate_environment(cls, values: Dict) -> Any:
-        """Validate that api key exists in environment."""
-        voyage_api_key = values.get("voyage_api_key") or os.getenv(
-            "VOYAGE_API_KEY", None
-        )
-        if voyage_api_key:
-            api_key_secretstr = convert_to_secret_str(voyage_api_key)
-            values["voyage_api_key"] = api_key_secretstr
-
-            api_key_str = api_key_secretstr.get_secret_value()
-        else:
-            api_key_str = None
-
-        base_url = values.get("base_url")
-        values["client"] = voyageai.Client(api_key=api_key_str, base_url=base_url)
-        values["aclient"] = voyageai.AsyncClient(api_key=api_key_str, base_url=base_url)
-
-        return values
+    @model_validator(mode="after")
+    def validate_environment(self) -> Self:
+        """Validate that VoyageAI credentials exist in environment."""
+        api_key_str = self.voyage_api_key.get_secret_value()
+        self.client = voyageai.Client(api_key=api_key_str, base_url=self.base_url)
+        self.aclient = voyageai.AsyncClient(api_key=api_key_str, base_url=self.base_url)
+        return self
 
     def _rerank(
         self,

@@ -29,9 +29,34 @@ documents = [Document(page_content=x) for x in doc_list]
 @pytest.mark.requires("voyageai")
 def test_init() -> None:
     VoyageAIRerank(
-        voyage_api_key="foo",  # type: ignore[arg-type]
+        voyage_api_key="foo",  # type: ignore[call-arg, arg-type]
         model="rerank-lite-1",
     )
+
+
+@pytest.mark.requires("voyageai")
+def test_init_with_api_key_alias() -> None:
+    """Test that api_key can be passed directly (same as VoyageAIEmbeddings)."""
+    rerank = VoyageAIRerank(
+        api_key="foo",  # type: ignore[arg-type]
+        model="rerank-lite-1",
+    )
+    assert rerank.voyage_api_key is not None
+    assert rerank.voyage_api_key.get_secret_value() == "foo"
+
+
+@pytest.mark.requires("voyageai")
+def test_init_with_api_key_alias_and_base_url() -> None:
+    """Test that api_key alias works together with base_url."""
+    custom_url = "https://custom.example.com/v1"
+    rerank = VoyageAIRerank(
+        api_key="foo",  # type: ignore[arg-type]
+        model="rerank-lite-1",
+        base_url=custom_url,
+    )
+    assert rerank.voyage_api_key is not None
+    assert rerank.voyage_api_key.get_secret_value() == "foo"
+    assert rerank.base_url == custom_url
 
 
 @pytest.mark.requires("voyageai")
@@ -39,7 +64,7 @@ def test_init_with_base_url() -> None:
     """Test reranker initialization with custom base_url."""
     custom_url = "https://custom.example.com/v1"
     rerank = VoyageAIRerank(
-        voyage_api_key="foo",  # type: ignore[arg-type]
+        voyage_api_key="foo",  # type: ignore[call-arg, arg-type]
         model="rerank-lite-1",
         base_url=custom_url,
     )
@@ -50,7 +75,7 @@ def test_init_with_base_url() -> None:
 def test_init_without_base_url() -> None:
     """Test reranker initialization without base_url (default behavior)."""
     rerank = VoyageAIRerank(
-        voyage_api_key="foo",  # type: ignore[arg-type]
+        voyage_api_key="foo",  # type: ignore[call-arg, arg-type]
         model="rerank-lite-1",
     )
     assert rerank.base_url is None
@@ -60,7 +85,7 @@ def test_init_without_base_url() -> None:
 def test_init_with_none_base_url() -> None:
     """Test reranker initialization with explicit None base_url."""
     rerank = VoyageAIRerank(
-        voyage_api_key="foo",  # type: ignore[arg-type]
+        voyage_api_key="foo",  # type: ignore[call-arg, arg-type]
         model="rerank-lite-1",
         base_url=None,
     )
@@ -96,7 +121,7 @@ def test_rerank_unit_test(mocker: Any) -> None:
     ]
 
     rerank = VoyageAIRerank(
-        voyage_api_key="foo",  # type: ignore[arg-type]
+        voyage_api_key="foo",  # type: ignore[call-arg, arg-type]
         model="rerank-lite-1",
     )
     result = rerank.compress_documents(
@@ -105,9 +130,24 @@ def test_rerank_unit_test(mocker: Any) -> None:
     assert expected_result == result
 
 
+@pytest.mark.requires("voyageai")
+def test_rerank_with_api_key_alias(mocker: Any) -> None:
+    """Test that compress_documents works when initialized with api_key alias."""
+    mocker.patch("voyageai.Client.rerank").return_value = get_mock_rerank_result()
+    rerank = VoyageAIRerank(
+        api_key="foo",  # type: ignore[arg-type]
+        model="rerank-lite-1",
+    )
+    result = rerank.compress_documents(
+        documents=documents, query="When is the Apple's conference call scheduled?"
+    )
+    assert len(result) == 2
+    assert result[0].metadata["relevance_score"] == 0.9
+
+
 def test_rerank_empty_input() -> None:
     rerank = VoyageAIRerank(
-        voyage_api_key="foo",  # type: ignore[arg-type]
+        voyage_api_key="foo",  # type: ignore[call-arg, arg-type]
         model="rerank-lite-1",
     )
     result = rerank.compress_documents(
