@@ -17,6 +17,7 @@ from typing_extensions import Self
 logger = logging.getLogger(__name__)
 
 VOYAGE_TOTAL_TOKEN_LIMITS = {
+    "voyage-context-4": 120_000,
     "voyage-context-3": 32_000,
     "voyage-4-lite": 1_000_000,
     "voyage-3.5-lite": 1_000_000,
