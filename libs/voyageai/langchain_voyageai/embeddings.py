@@ -185,10 +185,11 @@ class VoyageAIEmbeddings(BaseModel, Embeddings):
 
         def embed_fn(batch: List[str], inp_type: str) -> List[List[float]]:
             r = self._client.contextualized_embed(
-                inputs=[batch],
+                inputs=batch,
                 model=self.model,
                 input_type=inp_type,
                 output_dimension=self.output_dimension,
+                chunk_size=32000,
             ).results
             return cast(List[List[float]], r[0].embeddings)
 
@@ -238,10 +239,11 @@ class VoyageAIEmbeddings(BaseModel, Embeddings):
 
         async def embed_fn(batch: List[str], inp_type: str) -> List[List[float]]:
             r = await self._aclient.contextualized_embed(
-                inputs=[batch],
+                inputs=batch,
                 model=self.model,
                 input_type=inp_type,
                 output_dimension=self.output_dimension,
+                chunk_size=32000,
             )
             return cast(List[List[float]], r.results[0].embeddings)
 
