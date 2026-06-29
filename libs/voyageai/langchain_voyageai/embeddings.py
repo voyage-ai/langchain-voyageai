@@ -184,14 +184,20 @@ class VoyageAIEmbeddings(BaseModel, Embeddings):
         """Embed using contextualized embedding API."""
 
         def embed_fn(batch: List[str], inp_type: str) -> List[List[float]]:
-            r = self._client.contextualized_embed(
+            kwargs: dict[str, Any] = dict(
                 inputs=batch,
                 model=self.model,
                 input_type=inp_type,
                 output_dimension=self.output_dimension,
-                chunk_size=32_000,
-            ).results
-            return cast(List[List[float]], r[0].embeddings)
+            )
+            if inp_type == "document":
+                kwargs["chunk_size"] = 32_000
+                kwargs["enable_auto_chunking"] = True
+            r = self._client.contextualized_embed(**kwargs).results
+            return cast(
+                List[List[float]],
+                [emb for result in r for emb in result.embeddings],
+            )
 
         return self._batch_embed(texts, input_type, embed_fn)
 
@@ -238,14 +244,20 @@ class VoyageAIEmbeddings(BaseModel, Embeddings):
         """Async embed using contextualized embedding API."""
 
         async def embed_fn(batch: List[str], inp_type: str) -> List[List[float]]:
-            r = await self._aclient.contextualized_embed(
+            kwargs: dict[str, Any] = dict(
                 inputs=batch,
                 model=self.model,
                 input_type=inp_type,
                 output_dimension=self.output_dimension,
-                chunk_size=32_000,
             )
-            return cast(List[List[float]], r.results[0].embeddings)
+            if inp_type == "document":
+                kwargs["chunk_size"] = 32_000
+                kwargs["enable_auto_chunking"] = True
+            r = await self._aclient.contextualized_embed(**kwargs)
+            return cast(
+                List[List[float]],
+                [emb for result in r.results for emb in result.embeddings],
+            )
 
         return await self._abatch_embed(texts, input_type, embed_fn)
 
