@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 
 VOYAGE_TOTAL_TOKEN_LIMITS = {
     "voyage-context-4": 120_000,
-    "voyage-context-3": 32_000,
+    "voyage-context-3": 120_000,
     "voyage-4-lite": 1_000_000,
     "voyage-3.5-lite": 1_000_000,
     "voyage-4": 320_000,
@@ -185,10 +185,11 @@ class VoyageAIEmbeddings(BaseModel, Embeddings):
 
         def embed_fn(batch: List[str], inp_type: str) -> List[List[float]]:
             r = self._client.contextualized_embed(
-                inputs=[batch],
+                inputs=batch,
                 model=self.model,
                 input_type=inp_type,
                 output_dimension=self.output_dimension,
+                chunk_size=32_000,
             ).results
             return cast(List[List[float]], r[0].embeddings)
 
@@ -238,10 +239,11 @@ class VoyageAIEmbeddings(BaseModel, Embeddings):
 
         async def embed_fn(batch: List[str], inp_type: str) -> List[List[float]]:
             r = await self._aclient.contextualized_embed(
-                inputs=[batch],
+                inputs=batch,
                 model=self.model,
                 input_type=inp_type,
                 output_dimension=self.output_dimension,
+                chunk_size=32_000,
             )
             return cast(List[List[float]], r.results[0].embeddings)
 
