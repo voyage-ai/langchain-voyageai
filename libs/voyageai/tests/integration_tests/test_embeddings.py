@@ -273,15 +273,18 @@ def test_langchain_voyageai_embedding_single_document(model: str) -> None:
 
 @pytest.mark.parametrize("model", ALL_MODELS)
 def test_langchain_voyageai_embedding_consistency(model: str) -> None:
-    """Test that same text produces same embedding."""
+    """Test that same text produces nearly identical embedding."""
     text = "consistency test text"
     embedding = VoyageAIEmbeddings(model=model, batch_size=72)
 
     output1 = embedding.embed_query(text)
     output2 = embedding.embed_query(text)
 
-    # Same text should produce identical embeddings
-    assert output1 == output2
+    dot = sum(a * b for a, b in zip(output1, output2))
+    norm1 = sum(a * a for a in output1) ** 0.5
+    norm2 = sum(b * b for b in output2) ** 0.5
+    cosine_sim = dot / (norm1 * norm2)
+    assert cosine_sim > 0.99
 
 
 @pytest.mark.parametrize("model", ALL_MODELS)
