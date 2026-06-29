@@ -7,6 +7,7 @@ from langchain_voyageai import VoyageAIEmbeddings
 # Please set VOYAGE_API_KEY in the environment variables
 MODEL = "voyage-2"
 CONTEXT_MODEL = "voyage-context-3"
+CONTEXT_4_MODEL = "voyage-context-4"
 VOYAGE_4_MODEL = "voyage-4"
 VOYAGE_4_LITE_MODEL = "voyage-4-lite"
 VOYAGE_4_LARGE_MODEL = "voyage-4-large"
@@ -15,6 +16,7 @@ VOYAGE_4_LARGE_MODEL = "voyage-4-large"
 ALL_MODELS = [
     MODEL,
     CONTEXT_MODEL,
+    CONTEXT_4_MODEL,
     VOYAGE_4_MODEL,
     VOYAGE_4_LITE_MODEL,
     VOYAGE_4_LARGE_MODEL,
@@ -419,6 +421,53 @@ def test_voyage_4_family_flexible_output_dimensions(model: str, dimension: int) 
     """Test voyage-4 family embeddings with flexible output dimensions."""
     documents = ["foo bar"]
     embedding = VoyageAIEmbeddings(model=model, output_dimension=dimension)  # type: ignore[call-arg, arg-type]
+    output = embedding.embed_documents(documents)
+    assert len(output) == 1
+    assert len(output[0]) == dimension
+
+
+# ============================================================================
+# voyage-context-4 Specific Tests (contextualized chunk embeddings)
+# ============================================================================
+
+
+def test_langchain_voyageai_context_4_embedding_documents() -> None:
+    """Test contextual voyage-context-4 embeddings for documents."""
+    documents = ["foo bar", "baz qux"]
+    embedding = VoyageAIEmbeddings(model="voyage-context-4")  # type: ignore[call-arg]
+    output = embedding.embed_documents(documents)
+    assert len(output) == 2
+    assert len(output[0]) == 1024  # Default embedding dimension
+    assert len(output[1]) == 1024
+
+
+def test_langchain_voyageai_context_4_embedding_query() -> None:
+    """Test contextual voyage-context-4 embeddings for query."""
+    query = "foo bar"
+    embedding = VoyageAIEmbeddings(model="voyage-context-4")  # type: ignore[call-arg]
+    output = embedding.embed_query(query)
+    assert len(output) == 1024
+
+
+async def test_langchain_voyageai_async_context_4_embedding_documents() -> None:
+    """Test async contextual voyage-context-4 embeddings for documents."""
+    documents = ["foo bar", "baz qux", "hello world"]
+    embedding = VoyageAIEmbeddings(model="voyage-context-4")  # type: ignore[call-arg]
+    output = await embedding.aembed_documents(documents)
+    assert len(output) == 3
+    assert all(len(emb) == 1024 for emb in output)
+
+
+@pytest.mark.parametrize("dimension", [256, 512, 1024, 2048])
+def test_langchain_voyageai_context_4_flexible_output_dimensions(
+    dimension: int,
+) -> None:
+    """Test voyage-context-4 embeddings with flexible output dimensions."""
+    documents = ["foo bar"]
+    embedding = VoyageAIEmbeddings(
+        model="voyage-context-4",
+        output_dimension=dimension,  # type: ignore[arg-type]
+    )  # type: ignore[call-arg]
     output = embedding.embed_documents(documents)
     assert len(output) == 1
     assert len(output[0]) == dimension

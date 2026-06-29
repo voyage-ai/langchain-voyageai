@@ -44,6 +44,25 @@ embeddings = VoyageAIEmbeddings(
 )
 ```
 
+### Contextualized Chunk Embeddings
+
+`voyage-context-4` produces contextualized chunk embeddings, where each chunk is
+embedded in the context of the other chunks from the same document:
+
+```python
+# voyage-context-4: contextualized chunk embeddings for document-aware retrieval
+embeddings = VoyageAIEmbeddings(model="voyage-context-4")
+```
+
+It also supports flexible output dimensions (256, 512, 1024, 2048):
+
+```python
+embeddings = VoyageAIEmbeddings(
+    model="voyage-context-4",
+    output_dimension=512  # Choose from: 256, 512, 1024, 2048
+)
+```
+
 ### Custom API Endpoint
 
 You can specify a custom API endpoint using the `base_url` parameter:

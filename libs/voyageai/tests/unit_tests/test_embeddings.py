@@ -122,10 +122,45 @@ def test_is_context_model_detection() -> None:
     assert emb_regular2._is_context_model() is False
 
 
+def test_initialization_contextual_model_voyage_context_4() -> None:
+    """Test initialization with the voyage-context-4 contextual model."""
+    emb = VoyageAIEmbeddings(
+        voyage_api_key=SecretStr("NOT_A_VALID_KEY"), model="voyage-context-4"
+    )  # type: ignore
+    assert isinstance(emb, Embeddings)
+    assert emb.model == "voyage-context-4"
+    assert emb.batch_size == 1000  # Default batch size
+    assert emb._client is not None
+    # voyage-context-4 must be detected as a contextual model
+    assert emb._is_context_model() is True
+
+
+def test_voyage_context_4_flexible_output_dimensions_init() -> None:
+    """Test voyage-context-4 initialization with flexible output dimensions."""
+    for dimension in (256, 512, 1024, 2048):
+        emb = VoyageAIEmbeddings(
+            voyage_api_key=SecretStr("NOT_A_VALID_KEY"),  # type: ignore
+            model="voyage-context-4",
+            output_dimension=dimension,  # type: ignore[arg-type]
+        )
+        assert emb.model == "voyage-context-4"
+        assert emb.output_dimension == dimension
+        assert emb._is_context_model() is True
+
+
+def test_voyage_context_4_token_limit_in_registry() -> None:
+    """Test voyage-context-4 has the correct token limit in the registry."""
+    from langchain_voyageai.embeddings import VOYAGE_TOTAL_TOKEN_LIMITS
+
+    assert "voyage-context-4" in VOYAGE_TOTAL_TOKEN_LIMITS
+    assert VOYAGE_TOTAL_TOKEN_LIMITS["voyage-context-4"] == 120_000
+
+
 def test_contextual_model_variants() -> None:
     """Test different contextual model variants."""
     context_models = [
         "voyage-context-3",
+        "voyage-context-4",
         "voyage-context-lite",
         "custom-context-model",
     ]

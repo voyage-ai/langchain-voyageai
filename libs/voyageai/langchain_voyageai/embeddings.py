@@ -17,7 +17,8 @@ from typing_extensions import Self
 logger = logging.getLogger(__name__)
 
 VOYAGE_TOTAL_TOKEN_LIMITS = {
-    "voyage-context-3": 32_000,
+    "voyage-context-4": 120_000,
+    "voyage-context-3": 120_000,
     "voyage-4-lite": 1_000_000,
     "voyage-3.5-lite": 1_000_000,
     "voyage-4": 320_000,
@@ -183,13 +184,20 @@ class VoyageAIEmbeddings(BaseModel, Embeddings):
         """Embed using contextualized embedding API."""
 
         def embed_fn(batch: List[str], inp_type: str) -> List[List[float]]:
-            r = self._client.contextualized_embed(
-                inputs=[batch],
+            kwargs: dict[str, Any] = dict(
+                inputs=batch,
                 model=self.model,
                 input_type=inp_type,
                 output_dimension=self.output_dimension,
-            ).results
-            return cast(List[List[float]], r[0].embeddings)
+            )
+            if inp_type == "document":
+                kwargs["chunk_size"] = 32_000
+                kwargs["enable_auto_chunking"] = True
+            r = self._client.contextualized_embed(**kwargs).results
+            return cast(
+                List[List[float]],
+                [emb for result in r for emb in result.embeddings],
+            )
 
         return self._batch_embed(texts, input_type, embed_fn)
 
@@ -236,13 +244,20 @@ class VoyageAIEmbeddings(BaseModel, Embeddings):
         """Async embed using contextualized embedding API."""
 
         async def embed_fn(batch: List[str], inp_type: str) -> List[List[float]]:
-            r = await self._aclient.contextualized_embed(
-                inputs=[batch],
+            kwargs: dict[str, Any] = dict(
+                inputs=batch,
                 model=self.model,
                 input_type=inp_type,
                 output_dimension=self.output_dimension,
             )
-            return cast(List[List[float]], r.results[0].embeddings)
+            if inp_type == "document":
+                kwargs["chunk_size"] = 32_000
+                kwargs["enable_auto_chunking"] = True
+            r = await self._aclient.contextualized_embed(**kwargs)
+            return cast(
+                List[List[float]],
+                [emb for result in r.results for emb in result.embeddings],
+            )
 
         return await self._abatch_embed(texts, input_type, embed_fn)
 
