@@ -44,6 +44,21 @@ embeddings = VoyageAIEmbeddings(
 )
 ```
 
+### Code Embeddings
+
+`voyage-code-4` is optimized for code retrieval and supports flexible output
+dimensions (256, 512, 1024, 2048):
+
+```python
+# voyage-code-4: optimized for code retrieval
+embeddings = VoyageAIEmbeddings(model="voyage-code-4")
+
+embeddings = VoyageAIEmbeddings(
+    model="voyage-code-4",
+    output_dimension=512  # Choose from: 256, 512, 1024, 2048
+)
+```
+
 ### Contextualized Chunk Embeddings
 
 `voyage-context-4` produces contextualized chunk embeddings, where each chunk is

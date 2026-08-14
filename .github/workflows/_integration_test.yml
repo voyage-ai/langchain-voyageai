@@ -38,4 +38,5 @@ jobs:
         shell: bash
         env:
           VOYAGE_API_KEY: ${{ secrets.VOYAGE_API_KEY }}
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: make integration_test

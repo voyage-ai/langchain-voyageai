@@ -356,6 +356,40 @@ def test_voyage_4_token_limits_in_registry() -> None:
     assert VOYAGE_TOTAL_TOKEN_LIMITS["voyage-4-large"] == 120_000
 
 
+def test_voyage_code_4_initialization() -> None:
+    """Test voyage-code-4 model initialization."""
+    emb = VoyageAIEmbeddings(
+        voyage_api_key=SecretStr("NOT_A_VALID_KEY"), model="voyage-code-4"
+    )  # type: ignore
+    assert isinstance(emb, Embeddings)
+    assert emb.model == "voyage-code-4"
+    assert emb.batch_size == 1000
+    assert emb._client is not None
+    # voyage-code-4 is a regular embedding model, not contextual
+    assert emb._is_context_model() is False
+
+
+def test_voyage_code_4_flexible_output_dimensions_init() -> None:
+    """Test voyage-code-4 initialization with flexible output dimensions."""
+    for dimension in (256, 512, 1024, 2048):
+        emb = VoyageAIEmbeddings(
+            voyage_api_key=SecretStr("NOT_A_VALID_KEY"),  # type: ignore
+            model="voyage-code-4",
+            output_dimension=dimension,  # type: ignore[arg-type]
+        )
+        assert emb.model == "voyage-code-4"
+        assert emb.output_dimension == dimension
+        assert emb._is_context_model() is False
+
+
+def test_voyage_code_4_token_limit_in_registry() -> None:
+    """Test voyage-code-4 has the correct token limit in the registry."""
+    from langchain_voyageai.embeddings import VOYAGE_TOTAL_TOKEN_LIMITS
+
+    assert "voyage-code-4" in VOYAGE_TOTAL_TOKEN_LIMITS
+    assert VOYAGE_TOTAL_TOKEN_LIMITS["voyage-code-4"] == 120_000
+
+
 def test_init_progress_bar_missing_tqdm() -> None:
     """Test progress bar raises error when tqdm missing."""
     import sys

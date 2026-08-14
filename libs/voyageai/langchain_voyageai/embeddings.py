@@ -26,6 +26,7 @@ VOYAGE_TOTAL_TOKEN_LIMITS = {
     "voyage-2": 320_000,
     "voyage-4-large": 120_000,
     "voyage-3-large": 120_000,
+    "voyage-code-4": 120_000,
     "voyage-code-3": 120_000,
     "voyage-large-2-instruct": 120_000,
     "voyage-finance-2": 120_000,

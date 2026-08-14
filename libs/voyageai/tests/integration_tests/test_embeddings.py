@@ -11,6 +11,7 @@ CONTEXT_4_MODEL = "voyage-context-4"
 VOYAGE_4_MODEL = "voyage-4"
 VOYAGE_4_LITE_MODEL = "voyage-4-lite"
 VOYAGE_4_LARGE_MODEL = "voyage-4-large"
+CODE_4_MODEL = "voyage-code-4"
 
 # All models for generic tests
 ALL_MODELS = [
@@ -20,6 +21,7 @@ ALL_MODELS = [
     VOYAGE_4_MODEL,
     VOYAGE_4_LITE_MODEL,
     VOYAGE_4_LARGE_MODEL,
+    CODE_4_MODEL,
 ]
 
 
@@ -469,6 +471,53 @@ def test_langchain_voyageai_context_4_flexible_output_dimensions(
     documents = ["foo bar"]
     embedding = VoyageAIEmbeddings(
         model="voyage-context-4",
+        output_dimension=dimension,  # type: ignore[arg-type]
+    )  # type: ignore[call-arg]
+    output = embedding.embed_documents(documents)
+    assert len(output) == 1
+    assert len(output[0]) == dimension
+
+
+# ============================================================================
+# voyage-code-4 Specific Tests (code retrieval embeddings)
+# ============================================================================
+
+
+def test_langchain_voyageai_code_4_embedding_documents() -> None:
+    """Test voyage-code-4 embeddings for documents."""
+    documents = ["def foo(): pass", "print('hello world')"]
+    embedding = VoyageAIEmbeddings(model="voyage-code-4")  # type: ignore[call-arg]
+    output = embedding.embed_documents(documents)
+    assert len(output) == 2
+    assert len(output[0]) == 1024  # Default embedding dimension
+    assert len(output[1]) == 1024
+
+
+def test_langchain_voyageai_code_4_embedding_query() -> None:
+    """Test voyage-code-4 embeddings for query."""
+    query = "how to sort a list in python"
+    embedding = VoyageAIEmbeddings(model="voyage-code-4")  # type: ignore[call-arg]
+    output = embedding.embed_query(query)
+    assert len(output) == 1024
+
+
+async def test_langchain_voyageai_async_code_4_embedding_documents() -> None:
+    """Test async voyage-code-4 embeddings for documents."""
+    documents = ["def foo(): pass", "x = 1", "import os"]
+    embedding = VoyageAIEmbeddings(model="voyage-code-4")  # type: ignore[call-arg]
+    output = await embedding.aembed_documents(documents)
+    assert len(output) == 3
+    assert all(len(emb) == 1024 for emb in output)
+
+
+@pytest.mark.parametrize("dimension", [256, 512, 1024, 2048])
+def test_langchain_voyageai_code_4_flexible_output_dimensions(
+    dimension: int,
+) -> None:
+    """Test voyage-code-4 embeddings with flexible output dimensions."""
+    documents = ["def foo(): pass"]
+    embedding = VoyageAIEmbeddings(
+        model="voyage-code-4",
         output_dimension=dimension,  # type: ignore[arg-type]
     )  # type: ignore[call-arg]
     output = embedding.embed_documents(documents)
