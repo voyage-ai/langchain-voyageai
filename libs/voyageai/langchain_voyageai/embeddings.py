@@ -20,6 +20,7 @@ VOYAGE_TOTAL_TOKEN_LIMITS = {
     "voyage-context-4": 120_000,
     "voyage-context-3": 120_000,
     "voyage-4-lite": 1_000_000,
+    "voyage-4-nano": 1_000_000,
     "voyage-3.5-lite": 1_000_000,
     "voyage-4": 320_000,
     "voyage-3.5": 320_000,
@@ -68,8 +69,8 @@ class VoyageAIEmbeddings(BaseModel, Embeddings):
         ),
     )
     base_url: Optional[str] = None
-    """Custom API endpoint URL. If not provided, the VoyageAI SDK determines
-    the default based on the API key."""
+    """Custom API endpoint URL. If not provided, the VoyageAI by MongoDB SDK
+    determines the default based on the API key."""
 
     model_config = ConfigDict(
         extra="forbid",
@@ -78,7 +79,7 @@ class VoyageAIEmbeddings(BaseModel, Embeddings):
 
     @model_validator(mode="after")
     def validate_environment(self) -> Self:
-        """Validate that VoyageAI credentials exist in environment."""
+        """Validate that VoyageAI by MongoDB credentials exist in environment."""
         api_key_str = self.voyage_api_key.get_secret_value()
         self._client = voyageai.Client(api_key=api_key_str, base_url=self.base_url)
         self._aclient = voyageai.client_async.AsyncClient(
@@ -190,10 +191,9 @@ class VoyageAIEmbeddings(BaseModel, Embeddings):
                 model=self.model,
                 input_type=inp_type,
                 output_dimension=self.output_dimension,
+                enable_auto_chunking=True,
+                chunk_size=32_000,
             )
-            if inp_type == "document":
-                kwargs["chunk_size"] = 32_000
-                kwargs["enable_auto_chunking"] = True
             r = self._client.contextualized_embed(**kwargs).results
             return cast(
                 List[List[float]],
@@ -250,10 +250,9 @@ class VoyageAIEmbeddings(BaseModel, Embeddings):
                 model=self.model,
                 input_type=inp_type,
                 output_dimension=self.output_dimension,
+                enable_auto_chunking=True,
+                chunk_size=32_000,
             )
-            if inp_type == "document":
-                kwargs["chunk_size"] = 32_000
-                kwargs["enable_auto_chunking"] = True
             r = await self._aclient.contextualized_embed(**kwargs)
             return cast(
                 List[List[float]],

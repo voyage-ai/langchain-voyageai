@@ -1,6 +1,6 @@
 # langchain-voyageai
 
-This package contains the LangChain integrations for VoyageAI through their `voyageai` client package.
+This package contains the LangChain integrations for VoyageAI by MongoDB through their `voyageai` client package.
 
 ## Installation and Setup
 
@@ -8,7 +8,7 @@ This package contains the LangChain integrations for VoyageAI through their `voy
 ```bash
 pip install langchain-voyageai
 ```
-- Get an VoyageAI api key and set it as an environment variable (`VOYAGE_API_KEY`) or use the API key as a parameter in the Client.
+- Get a VoyageAI by MongoDB api key and set it as an environment variable (`VOYAGE_API_KEY`) or use the API key as a parameter in the Client.
 
 
 
@@ -22,7 +22,7 @@ from langchain_voyageai import VoyageAIEmbeddings
 
 ### Voyage-4 Family Models
 
-The latest generation of VoyageAI embedding models with improved quality and flexibility:
+The latest generation of VoyageAI by MongoDB embedding models with improved quality and flexibility:
 
 ```python
 # voyage-4: Balanced model for general-purpose and multilingual retrieval
@@ -33,6 +33,9 @@ embeddings = VoyageAIEmbeddings(model="voyage-4-lite")
 
 # voyage-4-large: Best retrieval quality for demanding applications
 embeddings = VoyageAIEmbeddings(model="voyage-4-large")
+
+# voyage-4-nano: Compact, efficiency-focused model for high-throughput workloads
+embeddings = VoyageAIEmbeddings(model="voyage-4-nano")
 ```
 
 All voyage-4 family models support flexible output dimensions (256, 512, 1024, 2048):
