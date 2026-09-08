@@ -16,6 +16,20 @@ from typing_extensions import Self
 
 logger = logging.getLogger(__name__)
 
+
+def _to_contextualized_inputs(batch: List[Any]) -> List[List[str]]:
+    """Normalize a batch into the nested form accepted by ``contextualized_embed``.
+
+    The official spec accepts ``inputs: Union[List[List[str]], List[str]]``
+    (https://docs.voyageai.com/docs/contextualized-chunk-embeddings). Both input
+    formats are supported here: a flat ``List[str]`` is treated as a list of
+    single-chunk documents so that exactly one embedding is returned per input
+    (matching LangChain's ``embed_documents`` contract), while an already-nested
+    ``List[List[str]]`` of pre-chunked documents is passed through unchanged.
+    """
+    return [item if isinstance(item, list) else [item] for item in batch]
+
+
 VOYAGE_TOTAL_TOKEN_LIMITS = {
     "voyage-context-4": 120_000,
     "voyage-context-3": 120_000,
@@ -24,6 +38,9 @@ VOYAGE_TOTAL_TOKEN_LIMITS = {
     "voyage-4": 320_000,
     "voyage-3.5": 320_000,
     "voyage-2": 320_000,
+    # voyage-4-nano has no published per-batch token limit; fall back to the
+    # conservative 120K default used for the rest of the current models.
+    "voyage-4-nano": 120_000,
     "voyage-4-large": 120_000,
     "voyage-3-large": 120_000,
     "voyage-code-4": 120_000,
@@ -185,16 +202,12 @@ class VoyageAIEmbeddings(BaseModel, Embeddings):
         """Embed using contextualized embedding API."""
 
         def embed_fn(batch: List[str], inp_type: str) -> List[List[float]]:
-            kwargs: dict[str, Any] = dict(
-                inputs=batch,
+            r = self._client.contextualized_embed(
+                inputs=_to_contextualized_inputs(batch),
                 model=self.model,
                 input_type=inp_type,
                 output_dimension=self.output_dimension,
-            )
-            if inp_type == "document":
-                kwargs["chunk_size"] = 32_000
-                kwargs["enable_auto_chunking"] = True
-            r = self._client.contextualized_embed(**kwargs).results
+            ).results
             return cast(
                 List[List[float]],
                 [emb for result in r for emb in result.embeddings],
@@ -245,16 +258,12 @@ class VoyageAIEmbeddings(BaseModel, Embeddings):
         """Async embed using contextualized embedding API."""
 
         async def embed_fn(batch: List[str], inp_type: str) -> List[List[float]]:
-            kwargs: dict[str, Any] = dict(
-                inputs=batch,
+            r = await self._aclient.contextualized_embed(
+                inputs=_to_contextualized_inputs(batch),
                 model=self.model,
                 input_type=inp_type,
                 output_dimension=self.output_dimension,
             )
-            if inp_type == "document":
-                kwargs["chunk_size"] = 32_000
-                kwargs["enable_auto_chunking"] = True
-            r = await self._aclient.contextualized_embed(**kwargs)
             return cast(
                 List[List[float]],
                 [emb for result in r.results for emb in result.embeddings],
