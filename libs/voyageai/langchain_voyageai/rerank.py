@@ -14,7 +14,7 @@ from voyageai.object import RerankingObject  # type: ignore
 
 
 class VoyageAIRerank(BaseDocumentCompressor):
-    """Document compressor that uses `VoyageAI Rerank API`."""
+    """Document compressor that uses `VoyageAI by MongoDB Rerank API`."""
 
     client: voyageai.Client = None  # type: ignore
     aclient: voyageai.AsyncClient = None  # type: ignore
@@ -104,7 +104,7 @@ class VoyageAIRerank(BaseDocumentCompressor):
         callbacks: Optional[Callbacks] = None,
     ) -> Sequence[Document]:
         """
-        Compress documents using VoyageAI's rerank API.
+        Compress documents using VoyageAI by MongoDB's rerank API.
 
         Args:
             documents: A sequence of documents to compress.
@@ -135,7 +135,7 @@ class VoyageAIRerank(BaseDocumentCompressor):
         callbacks: Optional[Callbacks] = None,
     ) -> Sequence[Document]:
         """
-        Compress documents using VoyageAI's rerank API.
+        Compress documents using VoyageAI by MongoDB's rerank API.
 
         Args:
             documents: A sequence of documents to compress.
