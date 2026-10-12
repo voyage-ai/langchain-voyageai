@@ -8,7 +8,8 @@ This package contains the LangChain integrations for VoyageAI by MongoDB through
 ```bash
 pip install langchain-voyageai
 ```
-- Get a VoyageAI by MongoDB api key and set it as an environment variable (`VOYAGE_API_KEY`) or use the API key as a parameter in the Client.
+- Get a VoyageAI by MongoDB api key and set it as an environment variable (`VOYAGE_API_KEY`) or use the API key as a parameter in the Client. Local models
+  (`voyage-4-nano`) do not need an API key.
 
 
 
@@ -35,10 +36,6 @@ embeddings = VoyageAIEmbeddings(model="voyage-4-lite")
 embeddings = VoyageAIEmbeddings(model="voyage-4-large")
 ```
 
-`voyage-4-nano` is an open-weight model distributed via Hugging Face for local
-use. It is not served by the VoyageAI API, so it cannot be used with
-`VoyageAIEmbeddings`.
-
 All voyage-4 family models support flexible output dimensions (256, 512, 1024, 2048):
 
 ```python
@@ -47,6 +44,24 @@ embeddings = VoyageAIEmbeddings(
     output_dimension=512  # Choose from: 256, 512, 1024, 2048
 )
 ```
+
+### Local Model (voyage-4-nano)
+
+`voyage-4-nano` is an open-weight voyage-4 model that runs on your own machine
+through the `voyageai` SDK (it is not served by the hosted API). No API key is
+needed. Install the SDK's local extra (Python 3.10+, pulls in `torch` and
+`sentence-transformers`):
+
+```bash
+pip install "voyageai[local]"
+```
+
+```python
+# voyage-4-nano: Smallest voyage-4 model, runs locally without an API key
+embeddings = VoyageAIEmbeddings(model="voyage-4-nano")
+```
+
+The model weights are downloaded from Hugging Face on first use.
 
 ### Code Embeddings
 
@@ -88,7 +103,7 @@ automatically: split long documents into chunks before embedding them.
 
 ## Reranker
 
-`VoyageAIRerank` is a document compressor backed by the VoyageAI rerank API:
+`VoyageAIRerank` is a document compressor backed by the VoyageAI by MongoDB rerank API:
 
 ```python
 from langchain_core.documents import Document

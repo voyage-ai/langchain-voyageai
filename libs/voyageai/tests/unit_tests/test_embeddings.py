@@ -1,5 +1,8 @@
 """Test embedding model integration."""
 
+from typing import Any
+
+import pytest
 from langchain_core.embeddings import Embeddings
 from pydantic import SecretStr
 
@@ -689,3 +692,50 @@ async def test_aembed_context_passes_nested_inputs_per_spec() -> None:
     kwargs = mock_ctx_embed.call_args.kwargs
     assert kwargs["inputs"] == [["foo"]]
     assert kwargs["input_type"] == "query"
+
+
+def test_voyage_4_nano_initialization_without_api_key(monkeypatch: Any) -> None:
+    """Local voyage-4-nano needs no API key."""
+    monkeypatch.delenv("VOYAGE_API_KEY", raising=False)
+    emb = VoyageAIEmbeddings(model="voyage-4-nano")  # type: ignore[call-arg]
+    assert emb.voyage_api_key is None
+    assert emb._client is not None
+    assert emb._aclient is not None
+
+
+def test_hosted_model_without_api_key_raises(monkeypatch: Any) -> None:
+    """Hosted models still require an API key at construction time."""
+    monkeypatch.delenv("VOYAGE_API_KEY", raising=False)
+    with pytest.raises(ValueError, match="VOYAGE_API_KEY"):
+        VoyageAIEmbeddings(model="voyage-4")  # type: ignore[call-arg]
+
+
+def test_voyage_4_nano_token_limit_in_registry() -> None:
+    """voyage-4-nano is listed in the token-limit registry."""
+    from langchain_voyageai.embeddings import VOYAGE_TOTAL_TOKEN_LIMITS
+
+    assert VOYAGE_TOTAL_TOKEN_LIMITS["voyage-4-nano"] == 120_000
+
+
+def test_voyage_4_nano_embed_documents(monkeypatch: Any) -> None:
+    """voyage-4-nano is embedded through the SDK client's embed method."""
+    from unittest.mock import Mock
+
+    monkeypatch.delenv("VOYAGE_API_KEY", raising=False)
+    emb = VoyageAIEmbeddings(  # type: ignore[call-arg]
+        model="voyage-4-nano", output_dimension=256
+    )
+    emb._client = Mock()
+    emb._client.tokenize.return_value = [[1, 2]]
+    emb._client.embed.return_value = Mock(embeddings=[[0.1] * 256, [0.2] * 256])
+
+    result = emb.embed_documents(["foo", "bar"])
+
+    assert result == [[0.1] * 256, [0.2] * 256]
+    emb._client.embed.assert_called_once_with(
+        ["foo", "bar"],
+        model="voyage-4-nano",
+        input_type="document",
+        truncation=True,
+        output_dimension=256,
+    )

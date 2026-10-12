@@ -523,3 +523,38 @@ def test_langchain_voyageai_code_4_flexible_output_dimensions(
     output = embedding.embed_documents(documents)
     assert len(output) == 1
     assert len(output[0]) == dimension
+
+
+# voyage-4-nano runs locally and needs `pip install "voyageai[local]"`.
+NANO_MODEL = "voyage-4-nano"
+
+
+def test_langchain_voyageai_nano_embedding_documents() -> None:
+    """Test local voyage-4-nano embeddings without an API key."""
+    pytest.importorskip("sentence_transformers")
+    documents = ["foo bar", "baz"]
+    embedding = VoyageAIEmbeddings(model=NANO_MODEL, api_key=None)  # type: ignore[call-arg]
+    output = embedding.embed_documents(documents)
+    assert len(output) == 2
+    assert all(len(emb) == 2048 for emb in output)
+
+
+def test_langchain_voyageai_nano_embedding_query_with_output_dimension() -> None:
+    """Test local voyage-4-nano query embeddings with a reduced dimension."""
+    pytest.importorskip("sentence_transformers")
+    embedding = VoyageAIEmbeddings(
+        model=NANO_MODEL,
+        api_key=None,
+        output_dimension=512,
+    )  # type: ignore[call-arg]
+    output = embedding.embed_query("foo bar")
+    assert len(output) == 512
+
+
+async def test_langchain_voyageai_async_nano_embedding_documents() -> None:
+    """Test async local voyage-4-nano embeddings."""
+    pytest.importorskip("sentence_transformers")
+    embedding = VoyageAIEmbeddings(model=NANO_MODEL, api_key=None)  # type: ignore[call-arg]
+    output = await embedding.aembed_documents(["foo bar", "baz"])
+    assert len(output) == 2
+    assert all(len(emb) == 2048 for emb in output)

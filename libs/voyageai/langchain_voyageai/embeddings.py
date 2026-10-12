@@ -13,6 +13,7 @@ from pydantic import (
     model_validator,
 )
 from typing_extensions import Self
+from voyageai.local.helpers import is_local_model  # type: ignore
 
 logger = logging.getLogger(__name__)
 
@@ -39,6 +40,8 @@ VOYAGE_TOTAL_TOKEN_LIMITS = {
     "voyage-3.5": 320_000,
     "voyage-2": 320_000,
     "voyage-4-large": 120_000,
+    # Runs locally through the voyageai SDK (``pip install "voyageai[local]"``).
+    "voyage-4-nano": 120_000,
     "voyage-3-large": 120_000,
     "voyage-code-4": 120_000,
     "voyage-code-3": 120_000,
@@ -55,14 +58,19 @@ VOYAGE_TOTAL_TOKEN_LIMITS = {
 
 
 class VoyageAIEmbeddings(BaseModel, Embeddings):
-    """VoyageAIEmbeddings embedding model.
+    """VoyageAI by MongoDB embedding models.
+
+    Hosted models are served by the VoyageAI by MongoDB API and require an API
+    key. Open-weight local models (``voyage-4-nano``) run on the local machine
+    through the ``voyageai`` SDK and need no API key; they require
+    ``pip install "voyageai[local]"``.
 
     Example:
         .. code-block:: python
 
             from langchain_voyageai import VoyageAIEmbeddings
 
-            model = VoyageAIEmbeddings()
+            model = VoyageAIEmbeddings(model="voyage-4")
     """
 
     _client: voyageai.Client = PrivateAttr()
@@ -73,14 +81,12 @@ class VoyageAIEmbeddings(BaseModel, Embeddings):
     output_dimension: Optional[Literal[256, 512, 1024, 2048]] = None
     show_progress_bar: bool = False
     truncation: bool = True
-    voyage_api_key: SecretStr = Field(
+    voyage_api_key: Optional[SecretStr] = Field(
         alias="api_key",
-        default_factory=secret_from_env(
-            "VOYAGE_API_KEY",
-            error_message="Must set `VOYAGE_API_KEY` environment variable or "
-            "pass `api_key` to VoyageAIEmbeddings constructor.",
-        ),
+        default_factory=secret_from_env("VOYAGE_API_KEY", default=None),
     )
+    """VoyageAI by MongoDB API key. Must be specified directly or via the
+    VOYAGE_API_KEY environment variable, except for local models."""
     base_url: Optional[str] = None
     """Custom API endpoint URL. If not provided, the VoyageAI SDK determines
     the default based on the API key."""
@@ -92,8 +98,16 @@ class VoyageAIEmbeddings(BaseModel, Embeddings):
 
     @model_validator(mode="after")
     def validate_environment(self) -> Self:
-        """Validate that VoyageAI credentials exist in environment."""
-        api_key_str = self.voyage_api_key.get_secret_value()
+        """Validate that VoyageAI by MongoDB credentials exist in environment."""
+        if self.voyage_api_key is None:
+            if not is_local_model(self.model):
+                raise ValueError(
+                    "Must set `VOYAGE_API_KEY` environment variable or "
+                    "pass `api_key` to VoyageAIEmbeddings constructor."
+                )
+            api_key_str = None
+        else:
+            api_key_str = self.voyage_api_key.get_secret_value()
         self._client = voyageai.Client(api_key=api_key_str, base_url=self.base_url)
         self._aclient = voyageai.client_async.AsyncClient(
             api_key=api_key_str, base_url=self.base_url

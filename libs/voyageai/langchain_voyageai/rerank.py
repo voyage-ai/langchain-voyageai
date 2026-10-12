@@ -18,7 +18,7 @@ class VoyageAIRerank(BaseDocumentCompressor):
 
     client: voyageai.Client = None  # type: ignore
     aclient: voyageai.AsyncClient = None  # type: ignore
-    """VoyageAI clients to use for compressing documents."""
+    """VoyageAI by MongoDB clients to use for compressing documents."""
     voyage_api_key: SecretStr = Field(
         alias="api_key",
         default_factory=secret_from_env(
@@ -27,8 +27,8 @@ class VoyageAIRerank(BaseDocumentCompressor):
             "pass `api_key` to VoyageAIRerank constructor.",
         ),
     )
-    """VoyageAI API key. Must be specified directly or via environment variable
-        VOYAGE_API_KEY."""
+    """VoyageAI by MongoDB API key. Must be specified directly or via environment
+    variable VOYAGE_API_KEY."""
     base_url: Optional[str] = None
     """Custom API endpoint URL. If not provided, the VoyageAI SDK determines
     the default based on the API key."""
@@ -46,7 +46,7 @@ class VoyageAIRerank(BaseDocumentCompressor):
 
     @model_validator(mode="after")
     def validate_environment(self) -> Self:
-        """Validate that VoyageAI credentials exist in environment."""
+        """Validate that VoyageAI by MongoDB credentials exist in environment."""
         api_key_str = self.voyage_api_key.get_secret_value()
         self.client = voyageai.Client(api_key=api_key_str, base_url=self.base_url)
         self.aclient = voyageai.AsyncClient(api_key=api_key_str, base_url=self.base_url)
