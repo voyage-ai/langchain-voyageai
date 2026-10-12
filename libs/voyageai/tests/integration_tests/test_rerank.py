@@ -30,7 +30,7 @@ def test_voyageai_reranker_init_with_api_key_alias() -> None:
 def test_sync() -> None:
     rerank = VoyageAIRerank(
         voyage_api_key=os.environ["VOYAGE_API_KEY"],  # type: ignore[call-arg, arg-type]
-        model="rerank-lite-1",
+        model="rerank-3",
     )
     doc_list = [
         "The Mediterranean diet emphasizes fish, olive oil, and vegetables"
@@ -63,7 +63,7 @@ def test_sync_with_api_key_alias() -> None:
     """Test sync reranking works when initialized with api_key alias."""
     rerank = VoyageAIRerank(
         api_key=os.environ["VOYAGE_API_KEY"],  # type: ignore[arg-type]
-        model="rerank-lite-1",
+        model="rerank-3-lite",
     )
     doc_list = [
         "The Mediterranean diet emphasizes fish, olive oil, and vegetables"
@@ -90,7 +90,7 @@ async def test_async_with_api_key_alias() -> None:
     """Test async reranking works when initialized with api_key alias."""
     rerank = VoyageAIRerank(
         api_key=os.environ["VOYAGE_API_KEY"],  # type: ignore[arg-type]
-        model="rerank-lite-1",
+        model="rerank-3-lite",
     )
     doc_list = [
         "The Mediterranean diet emphasizes fish, olive oil, and vegetables"
@@ -116,7 +116,7 @@ async def test_async_with_api_key_alias() -> None:
 async def test_async() -> None:
     rerank = VoyageAIRerank(
         voyage_api_key=os.environ["VOYAGE_API_KEY"],  # type: ignore[call-arg, arg-type]
-        model="rerank-lite-1",
+        model="rerank-3",
     )
     doc_list = [
         "The Mediterranean diet emphasizes fish, olive oil, and vegetables"

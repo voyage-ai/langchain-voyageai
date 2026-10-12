@@ -38,9 +38,6 @@ VOYAGE_TOTAL_TOKEN_LIMITS = {
     "voyage-4": 320_000,
     "voyage-3.5": 320_000,
     "voyage-2": 320_000,
-    # voyage-4-nano has no published per-batch token limit; fall back to the
-    # conservative 120K default used for the rest of the current models.
-    "voyage-4-nano": 120_000,
     "voyage-4-large": 120_000,
     "voyage-3-large": 120_000,
     "voyage-code-4": 120_000,

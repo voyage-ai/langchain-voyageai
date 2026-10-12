@@ -33,10 +33,11 @@ embeddings = VoyageAIEmbeddings(model="voyage-4-lite")
 
 # voyage-4-large: Best retrieval quality for demanding applications
 embeddings = VoyageAIEmbeddings(model="voyage-4-large")
-
-# voyage-4-nano: Smallest, fastest voyage-4 model (open-weight, also on Hugging Face)
-embeddings = VoyageAIEmbeddings(model="voyage-4-nano")
 ```
+
+`voyage-4-nano` is an open-weight model distributed via Hugging Face for local
+use. It is not served by the VoyageAI API, so it cannot be used with
+`VoyageAIEmbeddings`.
 
 All voyage-4 family models support flexible output dimensions (256, 512, 1024, 2048):
 
@@ -81,7 +82,35 @@ embeddings = VoyageAIEmbeddings(
 )
 ```
 
-### Custom API Endpoint
+Each text passed to `embed_documents` is sent as a single-chunk document, so
+exactly one embedding is returned per input. Inputs are not chunked
+automatically: split long documents into chunks before embedding them.
+
+## Reranker
+
+`VoyageAIRerank` is a document compressor backed by the VoyageAI rerank API:
+
+```python
+from langchain_core.documents import Document
+from langchain_voyageai import VoyageAIRerank
+
+# rerank-3: highest accuracy, recommended for most applications
+reranker = VoyageAIRerank(model="rerank-3", top_k=3)
+
+# rerank-3-lite: optimized for latency and cost
+reranker = VoyageAIRerank(model="rerank-3-lite", top_k=3)
+
+docs = reranker.compress_documents(
+    documents=[Document(page_content="...")],
+    query="your query",
+)
+```
+
+Each returned document carries `relevance_score` and `total_tokens` in its
+metadata. Legacy models (`rerank-2.5`, `rerank-2`, `rerank-1`, ...) remain
+available through the API.
+
+## Custom API Endpoint
 
 You can specify a custom API endpoint using the `base_url` parameter:
 

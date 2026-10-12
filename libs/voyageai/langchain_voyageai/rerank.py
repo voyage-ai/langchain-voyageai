@@ -33,7 +33,8 @@ class VoyageAIRerank(BaseDocumentCompressor):
     """Custom API endpoint URL. If not provided, the VoyageAI SDK determines
     the default based on the API key."""
     model: str
-    """Model to use for reranking."""
+    """Model to use for reranking. Recommended: ``rerank-3`` (highest accuracy)
+    or ``rerank-3-lite`` (lower latency and cost)."""
     top_k: Optional[int] = None
     """Number of documents to return."""
     truncation: bool = True
