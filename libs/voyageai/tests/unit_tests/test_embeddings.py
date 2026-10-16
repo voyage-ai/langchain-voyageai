@@ -1,5 +1,8 @@
 """Test embedding model integration."""
 
+from typing import Any
+
+import pytest
 from langchain_core.embeddings import Embeddings
 from pydantic import SecretStr
 
@@ -614,3 +617,125 @@ async def test_async_automatic_batching_due_to_token_limits() -> None:
 
     # Verify multiple batches were created due to token limits
     assert call_count >= 2, f"Expected at least 2 API calls, got {call_count}"
+
+
+def test_normalize_contextualized_inputs() -> None:
+    """Flat and nested inputs both normalize to the nested spec format."""
+    from langchain_voyageai.embeddings import _to_contextualized_inputs
+
+    # Flat List[str] -> one single-chunk document per input.
+    assert _to_contextualized_inputs(["a", "b"]) == [["a"], ["b"]]
+
+    # Already-nested List[List[str]] is passed through unchanged.
+    assert _to_contextualized_inputs([["a", "b"], ["c"]]) == [["a", "b"], ["c"]]
+
+    # Mixed flat/nested items are supported.
+    assert _to_contextualized_inputs(["a", ["b", "c"]]) == [["a"], ["b", "c"]]
+
+
+def test_embed_context_passes_nested_inputs_per_spec() -> None:
+    """contextualized_embed must be called with inputs as List[List[str]]."""
+    from unittest.mock import Mock
+
+    emb = VoyageAIEmbeddings(
+        voyage_api_key=SecretStr("NOT_A_VALID_KEY"),  # type: ignore[call-arg]
+        model="voyage-context-4",
+        batch_size=10,
+    )
+
+    emb._client.tokenize = Mock(return_value=[[1, 2, 3]])  # type: ignore[method-assign]
+    mock_ctx_embed = Mock(
+        return_value=Mock(
+            results=[
+                Mock(embeddings=[[0.1, 0.2]]),
+                Mock(embeddings=[[0.3, 0.4]]),
+            ]
+        )
+    )
+    emb._client.contextualized_embed = mock_ctx_embed  # type: ignore[method-assign]
+
+    result = emb._embed_context(["foo", "bar"], "document")
+
+    # One embedding returned per input (LangChain contract preserved).
+    assert len(result) == 2
+
+    kwargs = mock_ctx_embed.call_args.kwargs
+    # Inputs must follow the official Union[List[List[str]], List[str]] spec,
+    # here the nested single-chunk-document form.
+    assert kwargs["inputs"] == [["foo"], ["bar"]]
+    assert kwargs["model"] == "voyage-context-4"
+    assert kwargs["input_type"] == "document"
+    # Legacy auto-chunking kwargs must not be sent for pre-chunked inputs.
+    assert "enable_auto_chunking" not in kwargs
+    assert "chunk_size" not in kwargs
+
+
+async def test_aembed_context_passes_nested_inputs_per_spec() -> None:
+    """Async contextualized_embed must be called with nested inputs."""
+    from unittest.mock import AsyncMock, Mock
+
+    emb = VoyageAIEmbeddings(
+        voyage_api_key=SecretStr("NOT_A_VALID_KEY"),  # type: ignore[call-arg]
+        model="voyage-context-4",
+        batch_size=10,
+    )
+
+    emb._client.tokenize = Mock(return_value=[[1, 2, 3]])  # type: ignore[method-assign]
+    mock_ctx_embed = AsyncMock(
+        return_value=Mock(results=[Mock(embeddings=[[0.1, 0.2]])])
+    )
+    emb._aclient.contextualized_embed = mock_ctx_embed  # type: ignore[method-assign]
+
+    result = await emb._aembed_context(["foo"], "query")
+
+    assert len(result) == 1
+    kwargs = mock_ctx_embed.call_args.kwargs
+    assert kwargs["inputs"] == [["foo"]]
+    assert kwargs["input_type"] == "query"
+
+
+def test_voyage_4_nano_initialization_without_api_key(monkeypatch: Any) -> None:
+    """Local voyage-4-nano needs no API key."""
+    monkeypatch.delenv("VOYAGE_API_KEY", raising=False)
+    emb = VoyageAIEmbeddings(model="voyage-4-nano")  # type: ignore[call-arg]
+    assert emb.voyage_api_key is None
+    assert emb._client is not None
+    assert emb._aclient is not None
+
+
+def test_hosted_model_without_api_key_raises(monkeypatch: Any) -> None:
+    """Hosted models still require an API key at construction time."""
+    monkeypatch.delenv("VOYAGE_API_KEY", raising=False)
+    with pytest.raises(ValueError, match="VOYAGE_API_KEY"):
+        VoyageAIEmbeddings(model="voyage-4")  # type: ignore[call-arg]
+
+
+def test_voyage_4_nano_token_limit_in_registry() -> None:
+    """voyage-4-nano is listed in the token-limit registry."""
+    from langchain_voyageai.embeddings import VOYAGE_TOTAL_TOKEN_LIMITS
+
+    assert VOYAGE_TOTAL_TOKEN_LIMITS["voyage-4-nano"] == 120_000
+
+
+def test_voyage_4_nano_embed_documents(monkeypatch: Any) -> None:
+    """voyage-4-nano is embedded through the SDK client's embed method."""
+    from unittest.mock import Mock
+
+    monkeypatch.delenv("VOYAGE_API_KEY", raising=False)
+    emb = VoyageAIEmbeddings(  # type: ignore[call-arg]
+        model="voyage-4-nano", output_dimension=256
+    )
+    emb._client = Mock()
+    emb._client.tokenize.return_value = [[1, 2]]
+    emb._client.embed.return_value = Mock(embeddings=[[0.1] * 256, [0.2] * 256])
+
+    result = emb.embed_documents(["foo", "bar"])
+
+    assert result == [[0.1] * 256, [0.2] * 256]
+    emb._client.embed.assert_called_once_with(
+        ["foo", "bar"],
+        model="voyage-4-nano",
+        input_type="document",
+        truncation=True,
+        output_dimension=256,
+    )

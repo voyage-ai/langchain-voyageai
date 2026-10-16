@@ -154,3 +154,52 @@ def test_rerank_empty_input() -> None:
         documents=[], query="When is the Apple's conference call scheduled?"
     )
     assert len(result) == 0
+
+
+@pytest.mark.requires("voyageai")
+@pytest.mark.parametrize("model", ["rerank-3", "rerank-3-lite"])
+def test_rerank_3_models(mocker: Any, model: str) -> None:
+    """Test that rerank-3 family models are forwarded to the client."""
+    mock_rerank = mocker.patch("voyageai.Client.rerank")
+    mock_rerank.return_value = get_mock_rerank_result()
+    rerank = VoyageAIRerank(
+        voyage_api_key="foo",  # type: ignore[call-arg, arg-type]
+        model=model,
+        top_k=2,
+    )
+    query = "When is the Apple's conference call scheduled?"
+    result = rerank.compress_documents(documents=documents, query=query)
+
+    mock_rerank.assert_called_once_with(
+        query=query,
+        documents=doc_list,
+        model=model,
+        top_k=2,
+        truncation=True,
+    )
+    assert [doc.metadata["relevance_score"] for doc in result] == [0.9, 0.8]
+
+
+@pytest.mark.requires("voyageai")
+@pytest.mark.parametrize("model", ["rerank-3", "rerank-3-lite"])
+async def test_arerank_3_models(mocker: Any, model: str) -> None:
+    """Test that rerank-3 family models are forwarded to the async client."""
+    mock_rerank = mocker.patch(
+        "voyageai.AsyncClient.rerank", new_callable=mocker.AsyncMock
+    )
+    mock_rerank.return_value = get_mock_rerank_result()
+    rerank = VoyageAIRerank(
+        voyage_api_key="foo",  # type: ignore[call-arg, arg-type]
+        model=model,
+    )
+    query = "When is the Apple's conference call scheduled?"
+    result = await rerank.acompress_documents(documents=documents, query=query)
+
+    mock_rerank.assert_awaited_once_with(
+        query=query,
+        documents=doc_list,
+        model=model,
+        top_k=None,
+        truncation=True,
+    )
+    assert [doc.metadata["relevance_score"] for doc in result] == [0.9, 0.8]

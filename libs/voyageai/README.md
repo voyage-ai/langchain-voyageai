@@ -1,6 +1,6 @@
 # langchain-voyageai
 
-This package contains the LangChain integrations for VoyageAI through their `voyageai` client package.
+This package contains the LangChain integrations for VoyageAI by MongoDB through their `voyageai` client package.
 
 ## Installation and Setup
 
@@ -8,7 +8,8 @@ This package contains the LangChain integrations for VoyageAI through their `voy
 ```bash
 pip install langchain-voyageai
 ```
-- Get an VoyageAI api key and set it as an environment variable (`VOYAGE_API_KEY`) or use the API key as a parameter in the Client.
+- Get a VoyageAI by MongoDB api key and set it as an environment variable (`VOYAGE_API_KEY`) or use the API key as a parameter in the Client. Local models
+  (`voyage-4-nano`) do not need an API key.
 
 
 
@@ -22,7 +23,7 @@ from langchain_voyageai import VoyageAIEmbeddings
 
 ### Voyage-4 Family Models
 
-The latest generation of VoyageAI embedding models with improved quality and flexibility:
+The latest generation of VoyageAI by MongoDB embedding models with improved quality and flexibility:
 
 ```python
 # voyage-4: Balanced model for general-purpose and multilingual retrieval
@@ -43,6 +44,24 @@ embeddings = VoyageAIEmbeddings(
     output_dimension=512  # Choose from: 256, 512, 1024, 2048
 )
 ```
+
+### Local Model (voyage-4-nano)
+
+`voyage-4-nano` is an open-weight voyage-4 model that runs on your own machine
+through the `voyageai` SDK (it is not served by the hosted API). No API key is
+needed. Install the SDK's local extra (Python 3.10+, pulls in `torch` and
+`sentence-transformers`):
+
+```bash
+pip install "voyageai[local]"
+```
+
+```python
+# voyage-4-nano: Smallest voyage-4 model, runs locally without an API key
+embeddings = VoyageAIEmbeddings(model="voyage-4-nano")
+```
+
+The model weights are downloaded from Hugging Face on first use.
 
 ### Code Embeddings
 
@@ -78,7 +97,35 @@ embeddings = VoyageAIEmbeddings(
 )
 ```
 
-### Custom API Endpoint
+Each text passed to `embed_documents` is sent as a single-chunk document, so
+exactly one embedding is returned per input. Inputs are not chunked
+automatically: split long documents into chunks before embedding them.
+
+## Reranker
+
+`VoyageAIRerank` is a document compressor backed by the VoyageAI by MongoDB rerank API:
+
+```python
+from langchain_core.documents import Document
+from langchain_voyageai import VoyageAIRerank
+
+# rerank-3: highest accuracy, recommended for most applications
+reranker = VoyageAIRerank(model="rerank-3", top_k=3)
+
+# rerank-3-lite: optimized for latency and cost
+reranker = VoyageAIRerank(model="rerank-3-lite", top_k=3)
+
+docs = reranker.compress_documents(
+    documents=[Document(page_content="...")],
+    query="your query",
+)
+```
+
+Each returned document carries `relevance_score` and `total_tokens` in its
+metadata. Legacy models (`rerank-2.5`, `rerank-2`, `rerank-1`, ...) remain
+available through the API.
+
+## Custom API Endpoint
 
 You can specify a custom API endpoint using the `base_url` parameter:
 
